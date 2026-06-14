@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tlgrm"
+dynamic = ["version"]
+description = "An unofficial, feature-rich command-line client, MCP server, and webhook daemon for Telegram, built on Telethon"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Ali Alrabeei" }]
+keywords = ["telegram", "cli", "mcp", "telethon", "webhook", "automation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: Chat",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "telethon>=1.35.0",
+    "httpx>=0.24.0",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.urls]
+Homepage = "https://github.com/ali-commits/tlgrm"
+Repository = "https://github.com/ali-commits/tlgrm"
+Issues = "https://github.com/ali-commits/tlgrm/issues"
+
+[project.optional-dependencies]
+stt = ["faster-whisper>=1.0"]
+stt-whisper = ["openai-whisper>=20231117"]
+stt-whispercpp = ["pywhispercpp>=1.2"]
+stt-vosk = ["vosk>=0.3.45"]
+stt-all = ["tlgrm[stt,stt-whisper,stt-whispercpp,stt-vosk]"]
+mcp = ["mcp>=1.2"]
+dev = ["pytest>=7.0", "pytest-asyncio>=0.23"]
+all = ["tlgrm[mcp,stt]"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[project.scripts]
+tlgrm = "tlgrm.cli:main"
+tlgrm-mcp = "tlgrm.mcp.__main__:main"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tlgrm"]

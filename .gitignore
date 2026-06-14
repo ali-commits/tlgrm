@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# Telegram session files (CRITICAL: Contains private API login credentials!)
+tg_session
+tg_session.session
+tg_session.session-journal
+*.session
+*.session-journal
+
+# Log files
+*.log
+spam_love.log
+
+# Downloads directory (auto-downloaded media)
+downloads/
+
+# IDE/Editor files
+.vscode/
+.idea/
+.DS_Store
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Internal planning artifacts (kept local, not published)
+docs/superpowers/
