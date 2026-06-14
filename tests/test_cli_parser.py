@@ -13,7 +13,8 @@ def test_parser_has_all_commands():
                 "search", "reply", "read", "download",
                 "whoami", "user-info", "chat-info",
                 "forward", "react", "pin", "unpin", "mute", "unmute", "saved",
-                "create-group", "add-members", "remove-members", "leave", "schedule", "poll",]:
+                "create-group", "add-members", "remove-members", "leave", "schedule", "poll",
+                "transcribe",]:
         assert cmd in sub.choices
 
 

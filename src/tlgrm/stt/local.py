@@ -35,10 +35,13 @@ def faster_whisper_transcribe(path, model):
         logger.debug("faster-whisper not installed (pip install 'tlgrm[stt]').")
         return None
     name = model or "tiny"
-    key = ("faster-whisper", name)
+    # Default to CPU so it works without CUDA; opt into GPU via TG_STT_DEVICE=cuda.
+    device = os.getenv("TG_STT_DEVICE", "cpu")
+    compute = os.getenv("TG_STT_COMPUTE", "int8" if device == "cpu" else "default")
+    key = ("faster-whisper", name, device, compute)
     if key not in _models:
-        logger.info(f"Loading faster-whisper model '{name}'...")
-        _models[key] = WhisperModel(name)
+        logger.info(f"Loading faster-whisper model '{name}' on {device} ({compute})...")
+        _models[key] = WhisperModel(name, device=device, compute_type=compute)
     segments, _ = _models[key].transcribe(path)
     return " ".join(s.text for s in segments).strip()
 

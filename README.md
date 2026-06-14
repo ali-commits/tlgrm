@@ -288,9 +288,14 @@ tlgrm daemon uninstall
 
 ## Speech-to-text (optional)
 
-When the `stt` extra is installed, the webhook daemon automatically transcribes incoming **voice notes and audio**, populating `media.transcription` in the webhook payload. tlgrm supports **pluggable STT backends**: local models and cloud APIs.
+When the `stt` extra is installed, the webhook daemon automatically transcribes incoming **voice notes and audio**, populating `media.transcription` in the webhook payload. You can also transcribe any audio file directly with **`tlgrm transcribe`** (no login required). tlgrm supports **pluggable STT backends**: local models and cloud APIs.
 
-**Default:** `faster-whisper` (local, lightweight, auto-downloads the model on first use).
+**Default:** `faster-whisper` (local, lightweight, auto-downloads the model on first use; CPU by default, set `TG_STT_DEVICE=cuda` for GPU).
+
+```bash
+tlgrm transcribe --file voice.ogg                       # default backend
+tlgrm transcribe --file voice.ogg --backend faster-whisper
+```
 
 ```bash
 # Local faster-whisper (default — recommended)
