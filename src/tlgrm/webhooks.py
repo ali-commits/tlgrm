@@ -10,13 +10,13 @@ from .config import DOWNLOADS_DIR
 from .core.client import get_client, ensure_authorized
 from .core.errors import NotAuthorizedError
 from .core import serialize
-from .stt import transcribe_audio
+from .stt import transcribe_audio, preload
 
-# Set up logging for the webhook daemon
+# Log to stderr so command JSON on stdout stays clean and pipeable.
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)]
+    handlers=[logging.StreamHandler(sys.stderr)]
 )
 logger = logging.getLogger("tlgrm-webhook")
 
@@ -46,7 +46,10 @@ async def run_listener(webhook_url=None, webhook_headers=None, verbose=False):
         logger.error(str(e))
         await client.disconnect()
         return
-    
+
+    # Pre-warm the STT model so the first incoming voice note isn't delayed by a load.
+    preload()
+
     # Parse custom headers
     parsed_headers = {}
     if webhook_headers:

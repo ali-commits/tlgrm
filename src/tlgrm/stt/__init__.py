@@ -9,12 +9,10 @@ from . import local, cloud
 
 logger = logging.getLogger("tlgrm-stt")
 
+# Local backends are the multilingual whisper family (handle Arabic, English, etc.).
 _LOCAL = {
     "faster-whisper": local.faster_whisper_transcribe,
     "whisper": local.whisper_transcribe,
-    "whispercpp": local.whispercpp_transcribe,
-    "vosk": local.vosk_transcribe,
-    "parakeet": local.parakeet_transcribe,
 }
 _CLOUD = {
     "openai": cloud.openai_transcribe,
@@ -44,3 +42,33 @@ def transcribe_audio(file_path, backend=None, model=None):
     except Exception as e:
         logger.error(f"STT backend '{backend}' failed: {e}")
         return None
+
+
+def preload():
+    """Warm the configured local STT model (e.g. at daemon startup) so the first
+    real voice note isn't delayed by a model load. Best-effort; no-op for cloud
+    backends or when no local STT dependency is installed."""
+    import os
+    import tempfile
+    import wave
+
+    backend = resolve_backend()
+    if backend not in _LOCAL:
+        return  # cloud backends have no local model to warm
+    fd, p = tempfile.mkstemp(suffix=".wav")
+    os.close(fd)
+    try:
+        with wave.open(p, "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(16000)
+            w.writeframes(b"\x00\x00" * 16000)  # 1s of silence
+        transcribe_audio(p, backend=backend)
+        logger.info(f"STT backend '{backend}' pre-warmed.")
+    except Exception as e:
+        logger.warning(f"STT preload skipped ({e}); the model will load on first use.")
+    finally:
+        try:
+            os.remove(p)
+        except OSError:
+            pass

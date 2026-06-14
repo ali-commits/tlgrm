@@ -2,14 +2,16 @@
 
 > **Unofficial app notice:** tlgrm is an independent, unofficial client built on the Telegram API (via Telethon). It is not affiliated with, endorsed by, or sponsored by Telegram.
 
-One of tlgrm's most powerful capabilities is acting as a real-time bridge that forwards your **incoming** Telegram messages to an external HTTP webhook. This is useful for connecting your personal Telegram account to a database or workflow automation system (n8n, Make, custom APIs, etc.).
+One of tlgrm's most powerful features is acting as a real-time bridge that forwards your **incoming** Telegram messages to an external HTTP webhook. This is useful for connecting your personal Telegram account to a database or workflow automation system (n8n, Make, custom APIs, etc.).
 
 When a message arrives, tlgrm:
 
 1. Builds a structured JSON payload (sender, chat, message, media).
 2. Downloads any attached media to `TG_DOWNLOADS_DIR`.
 3. Optionally transcribes voice/audio using the configured [STT backend](configuration.md#speech-to-text-backends) (if the `stt` extra or a cloud API key is available).
-4. POSTs the payload to your webhook URL (with retries), or prints it if no URL is set.
+4. POSTs the payload to your webhook URL (with retries), or prints it to stdout if no URL is set.
+
+Logs and progress output go to **stderr**, keeping stdout clean.
 
 > Only **incoming** messages trigger the webhook — your own outgoing messages are ignored.
 
@@ -24,7 +26,7 @@ tlgrm listen --webhook-url https://your-server.com/webhook \
              --webhook-header "Authorization: Bearer YOUR_SECRET_TOKEN"
 ```
 
-Without `--webhook-url`, payloads are printed to the console instead of forwarded — handy for development:
+Without `--webhook-url`, payloads are printed to stdout instead of forwarded — handy for development:
 
 ```bash
 tlgrm listen --verbose
@@ -58,6 +60,8 @@ tlgrm daemon install --webhook-url https://your-server.com/webhook \
 ```
 
 > The webhook URL and headers are validated before the unit is written (no whitespace, control characters, or quotes that could corrupt the unit file).
+
+If the STT extra is installed, the daemon pre-warms the model at startup so the first voice note transcribes without delay.
 
 ### 2. Check status
 
@@ -133,15 +137,23 @@ Each webhook POST sends a JSON body with this structure:
 | `message.id` | int | Telegram message ID |
 | `message.text` | string | Message text (empty string for media-only messages) |
 | `message.date` | string | ISO-8601 send time |
-| `message.reply_to_msg_id` | int \| null | ID of the message being replied to, if any |
+| `message.reply_to_msg_id` | int or null | ID of the message being replied to, if any |
 | `chat.type` | string | `user`, `group`, `channel`, or `unknown` |
 | `sender.*` | object | Sender identity fields (may be empty per privacy settings) |
 | `media.present` | bool | Whether the message has media |
-| `media.type` | string \| null | `photo`, `voice`, `video`, `audio`, `document`, or `other` |
-| `media.local_path` | string \| null | Absolute path to the downloaded file |
-| `media.transcription` | string \| null | STT transcription of voice/audio (see [STT backends](configuration.md#speech-to-text-backends)) |
+| `media.type` | string or null | `photo`, `voice`, `video`, `audio`, `document`, or `other` |
+| `media.local_path` | string or null | Absolute path to the downloaded file |
+| `media.self_destruct` | bool | `true` if the media was self-destructing (TTL) and was therefore skipped |
+| `media.transcription` | string or null | STT transcription of voice/audio (see [STT backends](configuration.md#speech-to-text-backends)) |
 
-> If the `stt` extra is installed (provides `faster-whisper`) or a cloud API key is set, incoming voice notes and audio are transcribed automatically and the text appears in `media.transcription`. Without any STT backend, the field is `null` and everything else works unchanged.
+> If the `stt` extra is installed or a cloud API key is set, incoming voice notes and audio are transcribed automatically and the text appears in `media.transcription`. Without any STT backend, the field is `null` and everything else works unchanged.
+
+For better Arabic or multilingual accuracy, set a larger model before starting the daemon:
+
+```bash
+export TG_STT_MODEL=large-v3-turbo
+tlgrm daemon install --webhook-url https://example.com/webhook
+```
 
 ---
 
@@ -149,6 +161,6 @@ Each webhook POST sends a JSON body with this structure:
 
 - Forwarding runs as a background task so it never blocks the listener.
 - Failed POSTs are retried up to 3 times with exponential backoff, then logged and dropped.
-- A `2xx` response is considered success; anything else is logged as an error.
+- A `2xx` response is considered success; anything else is logged as an error (to stderr).
 
 > tlgrm does not currently sign webhook payloads (e.g. HMAC). If your endpoint is public, protect it with a secret header and verify it server-side.
