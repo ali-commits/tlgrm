@@ -80,6 +80,8 @@ tlgrm supports pluggable STT backends selected via environment variables or a co
 | `TG_STT_BACKEND` | Force a specific backend: `faster-whisper`, `whisper`, `whispercpp`, `vosk`, `openai`, `groq`, `deepgram`, `elevenlabs`, `google` |
 | `TG_STT_MODEL` | Override the model name/size used by the selected backend |
 | `TG_STT_LANGUAGE` | Language code for Google STT (default `en-US`) |
+| `TG_STT_DEVICE` | faster-whisper device: `cpu` (default) or `cuda` for GPU |
+| `TG_STT_COMPUTE` | faster-whisper compute type (default `int8` on CPU) |
 | `OPENAI_API_KEY` | API key for the OpenAI backend |
 | `GROQ_API_KEY` | API key for the Groq backend |
 | `DEEPGRAM_API_KEY` | API key for the Deepgram backend |

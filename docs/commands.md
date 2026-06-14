@@ -670,6 +670,32 @@ tlgrm poll --target @somegroup --question "Capital of France?" \
 
 ---
 
+## `tlgrm transcribe`
+
+Transcribe an audio file to text using the configured speech-to-text backend. Runs locally — no Telegram login required.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--file` | ✅ | Path to the audio file |
+| `--backend` | ❌ | Override the backend (`faster-whisper`, `whisper`, `whispercpp`, `vosk`, `openai`, `groq`, `deepgram`, `elevenlabs`, `google`) |
+| `--model` | ❌ | Override the backend model |
+
+```bash
+tlgrm transcribe --file voice.ogg
+tlgrm transcribe --file voice.ogg --backend faster-whisper --model base
+tlgrm transcribe --file voice.ogg --backend openai     # needs OPENAI_API_KEY
+```
+
+**Output:**
+
+```json
+{ "success": true, "backend": "faster-whisper", "text": "..." }
+```
+
+Local backends need their extra installed (e.g. `tlgrm[stt]`); cloud backends need their API key. See [Configuration → Speech-to-text](configuration.md#speech-to-text-backends).
+
+---
+
 ## `tlgrm listen`
 
 Listen for **incoming** messages in the foreground and optionally forward them to a webhook. See the [Webhook & Daemon Guide](webhook-guide.md) for the full payload schema.

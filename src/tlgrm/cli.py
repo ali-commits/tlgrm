@@ -168,6 +168,12 @@ def build_parser():
     dsub.add_parser("status", help="Show daemon systemd status")
     dsub.add_parser("logs", help="Show recent daemon logs")
 
+    p = sub.add_parser("transcribe", help="Transcribe an audio file (speech-to-text)")
+    p.add_argument("--file", required=True, help="Path to the audio file")
+    p.add_argument("--backend", help="Override the STT backend (faster-whisper, whisper, "
+                                     "whispercpp, vosk, openai, groq, deepgram, elevenlabs, google)")
+    p.add_argument("--model", help="Override the backend model")
+
     return parser
 
 
@@ -269,7 +275,17 @@ def main():
         if args.command in ("send", "reply", "saved") and not getattr(args, "text", None) and not getattr(args, "file", None):
             parser.error(f"At least one of --text or --file is required for {args.command}.")
 
-        if args.command == "listen":
+        if args.command == "transcribe":
+            import os
+            from .stt import transcribe_audio
+            from .stt.settings import resolve_backend
+            if not os.path.exists(args.file):
+                emit({"success": False, "error": f"File not found: {args.file}"})
+                sys.exit(1)
+            backend = args.backend or resolve_backend()
+            text = transcribe_audio(args.file, backend=args.backend, model=args.model)
+            emit({"success": text is not None, "backend": backend, "text": text})
+        elif args.command == "listen":
             asyncio.run(run_listener(args.webhook_url, args.webhook_header, args.verbose))
         elif args.command == "daemon":
             if args.daemon_command == "install":

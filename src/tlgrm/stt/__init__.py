@@ -24,15 +24,19 @@ _CLOUD = {
 }
 
 
-def transcribe_audio(file_path):
-    """Transcribe an audio file using the configured backend; None on failure."""
-    backend = resolve_backend()
+def transcribe_audio(file_path, backend=None, model=None):
+    """Transcribe an audio file; None on failure.
+
+    `backend`/`model` override the configured selection (useful for the
+    `transcribe` command and A/B testing); otherwise the env/config defaults apply.
+    """
+    backend = backend or resolve_backend()
     fn = _LOCAL.get(backend) or _CLOUD.get(backend)
     if fn is None:
         logger.warning(f"Unknown STT backend '{backend}'; skipping transcription.")
         return None
     try:
-        text = fn(file_path, resolve_model())
+        text = fn(file_path, model or resolve_model())
         if text:
             logger.info(f"Transcribed via '{backend}': \"{text}\"")
         return text or None
