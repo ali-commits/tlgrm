@@ -1,6 +1,13 @@
 # Command Reference
 
-Every tlgrm command prints **pretty-printed JSON** to stdout unless noted otherwise. All commands except `login` and the `daemon` management subcommands require an authenticated session (run `tlgrm login` first) and your [API credentials](configuration.md) in the environment.
+Every tlgrm command prints **clean JSON to stdout**. Diagnostic logs and progress output go to **stderr**, so piping into `jq` or other tools works reliably:
+
+```bash
+tlgrm chats | jq '.[].name'
+tlgrm history --target @username --limit 5 | jq '.[].text'
+```
+
+All commands except `login` and the `daemon` management subcommands require an authenticated session (run `tlgrm login` first) and your [API credentials](configuration.md) in the environment.
 
 ## Targets
 
@@ -20,7 +27,7 @@ Interactively authenticate your personal Telegram account and store a reusable s
 tlgrm login
 ```
 
-Prompts for your phone number, the login code (sent in-app), and 2FA password if enabled. Prints a confirmation line (plain text, not JSON) and saves the session to `~/.tlgrm/tg_session.session`.
+Prompts for your phone number, the login code (sent in-app), and 2FA password if enabled. Saves the session to `~/.tlgrm/tg_session.session`.
 
 ---
 
@@ -56,6 +63,7 @@ List your most recent chats/dialogs.
 
 ```bash
 tlgrm chats --limit 10
+tlgrm chats | jq '.[] | select(.unread_count > 0)'
 ```
 
 **Output:** a JSON array of:
@@ -138,10 +146,11 @@ List the participants of a group or channel.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Group/channel to inspect |
+| `--target` | string | Yes | Group/channel to inspect |
 
 ```bash
 tlgrm members --target @somegroup
+tlgrm members --target @somegroup | jq 'length'   # member count
 ```
 
 **Output:** a JSON array of:
@@ -159,7 +168,7 @@ tlgrm members --target @somegroup
 ]
 ```
 
-> Visibility of fields like `phone` depends on the other user's privacy settings and your relationship.
+> Visibility of fields like `phone` depends on the other user's privacy settings.
 
 ---
 
@@ -169,7 +178,7 @@ Show profile information for a user.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | User to look up |
+| `--target` | string | Yes | User to look up |
 
 ```bash
 tlgrm user-info --target @username
@@ -197,7 +206,7 @@ Show information about a chat or channel.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat/channel to inspect |
+| `--target` | string | Yes | Chat/channel to inspect |
 
 ```bash
 tlgrm chat-info --target @somegroup
@@ -224,9 +233,9 @@ Download media from a specific message.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat containing the message |
-| `--message-id` | int | ✅ | ID of the message with media |
-| `--output` | path | ❌ | Output file or directory (defaults to `TG_DOWNLOADS_DIR`) |
+| `--target` | string | Yes | Chat containing the message |
+| `--message-id` | int | Yes | ID of the message with media |
+| `--output` | path | No | Output file or directory (defaults to `TG_DOWNLOADS_DIR`) |
 
 ```bash
 tlgrm download --target @username --message-id 137480
@@ -247,15 +256,13 @@ Send a text message, a file/media, or a voice note.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Recipient (see [Targets](#targets)) |
-| `--text` | string | ⚠️ | Text body. Required unless `--file` is given. |
-| `--file` | path | ⚠️ | Path to a file/media to send. Required unless `--text` is given. |
-| `--caption` | string | ❌ | Caption for a file (overrides `--text` as the caption when both are present) |
-| `--voice` | flag | ❌ | Send the file as a voice note |
-| `--reply-to` | int | ❌ | Reply to this message ID |
-| `--silent` | flag | ❌ | Send without notification |
-
-> At least one of `--text` or `--file` must be provided.
+| `--target` | string | Yes | Recipient (see [Targets](#targets)) |
+| `--text` | string | One of | Text body. Required unless `--file` is given. |
+| `--file` | path | One of | Path to a file/media to send. Required unless `--text` is given. |
+| `--caption` | string | No | Caption for a file |
+| `--voice` | flag | No | Send the file as a voice note |
+| `--reply-to` | int | No | Reply to this message ID |
+| `--silent` | flag | No | Send without notification |
 
 ```bash
 # Text
@@ -267,7 +274,7 @@ tlgrm send --target @username --file ./photo.jpg --caption "Sunset"
 # Voice note
 tlgrm send --target @username --file ./audio.ogg --voice
 
-# Reply silently
+# Silent reply
 tlgrm send --target @username --text "Got it" --reply-to 137480 --silent
 ```
 
@@ -293,13 +300,13 @@ Reply to a specific message.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat containing the message |
-| `--message-id` | int | ✅ | ID of the message to reply to |
-| `--text` | string | ⚠️ | Reply text. Required unless `--file` is given. |
-| `--file` | path | ⚠️ | File to send as the reply. Required unless `--text` is given. |
-| `--caption` | string | ❌ | Caption for the file |
-| `--voice` | flag | ❌ | Send the file as a voice note |
-| `--silent` | flag | ❌ | Send without notification |
+| `--target` | string | Yes | Chat containing the message |
+| `--message-id` | int | Yes | ID of the message to reply to |
+| `--text` | string | One of | Reply text |
+| `--file` | path | One of | File to send as the reply |
+| `--caption` | string | No | Caption for the file |
+| `--voice` | flag | No | Send the file as a voice note |
+| `--silent` | flag | No | Send without notification |
 
 ```bash
 tlgrm reply --target @username --message-id 137480 --text "Thanks!"
@@ -315,9 +322,9 @@ Edit a message you previously sent.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat containing the message |
-| `--message-id` | int | ✅ | ID of the message to edit |
-| `--text` | string | ✅ | New text content |
+| `--target` | string | Yes | Chat containing the message |
+| `--message-id` | int | Yes | ID of the message to edit |
+| `--text` | string | Yes | New text content |
 
 ```bash
 tlgrm edit --target @username --message-id 137480 --text "Edited text"
@@ -337,19 +344,15 @@ Mark a chat (or messages up to a specific ID) as read.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat to mark as read |
-| `--max-id` | int | ❌ | Mark up to this message ID (omit to mark all) |
+| `--target` | string | Yes | Chat to mark as read |
+| `--max-id` | int | No | Mark up to this message ID (omit to mark all) |
 
 ```bash
 tlgrm read --target @username
 tlgrm read --target @username --max-id 137480
 ```
 
-**Output:**
-
-```json
-{ "success": true }
-```
+**Output:** `{ "success": true }`
 
 ---
 
@@ -359,9 +362,9 @@ Forward one or more messages from one chat to another.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--from` | string | ✅ | Source chat |
-| `--to` | string | ✅ | Destination chat |
-| `--message-ids` | int… | ✅ | One or more message IDs (space-separated) |
+| `--from` | string | Yes | Source chat |
+| `--to` | string | Yes | Destination chat |
+| `--message-ids` | int… | Yes | One or more message IDs (space-separated) |
 
 ```bash
 tlgrm forward --from @username --to @otheruser --message-ids 137480 137481
@@ -377,19 +380,18 @@ tlgrm forward --from @username --to @otheruser --message-ids 137480 137481
 
 ## `tlgrm react`
 
-React to a message with an emoji. Pass an empty string to `--emoji` to clear an existing reaction.
+React to a message with an emoji. Pass an empty string to clear an existing reaction.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat containing the message |
-| `--message-id` | int | ✅ | ID of the message |
-| `--emoji` | string | ✅ | Emoji to react with (empty string clears the reaction) |
-| `--big` | flag | ❌ | Send as a big/animated reaction |
+| `--target` | string | Yes | Chat containing the message |
+| `--message-id` | int | Yes | ID of the message |
+| `--emoji` | string | Yes | Emoji to react with (empty string clears the reaction) |
+| `--big` | flag | No | Send as a big/animated reaction |
 
 ```bash
 tlgrm react --target @username --message-id 137480 --emoji "👍"
-tlgrm react --target @username --message-id 137480 --emoji "👍" --big
-tlgrm react --target @username --message-id 137480 --emoji ""
+tlgrm react --target @username --message-id 137480 --emoji ""   # clear reaction
 ```
 
 **Output:**
@@ -406,20 +408,16 @@ Pin a message in a chat.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat |
-| `--message-id` | int | ✅ | ID of the message to pin |
-| `--notify` | flag | ❌ | Notify members of the pin |
+| `--target` | string | Yes | Chat |
+| `--message-id` | int | Yes | ID of the message to pin |
+| `--notify` | flag | No | Notify members of the pin |
 
 ```bash
 tlgrm pin --target @somegroup --message-id 137480
 tlgrm pin --target @somegroup --message-id 137480 --notify
 ```
 
-**Output:**
-
-```json
-{ "success": true, "message_id": 137480 }
-```
+**Output:** `{ "success": true, "message_id": 137480 }`
 
 ---
 
@@ -429,19 +427,15 @@ Unpin a message, or unpin all messages if `--message-id` is omitted.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat |
-| `--message-id` | int | ❌ | ID of the message to unpin (omit to unpin all) |
+| `--target` | string | Yes | Chat |
+| `--message-id` | int | No | ID of the message to unpin (omit to unpin all) |
 
 ```bash
 tlgrm unpin --target @somegroup --message-id 137480
 tlgrm unpin --target @somegroup   # unpins all
 ```
 
-**Output:**
-
-```json
-{ "success": true }
-```
+**Output:** `{ "success": true }`
 
 ---
 
@@ -451,19 +445,15 @@ Mute notifications for a chat.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat to mute |
-| `--duration` | int | ❌ | Seconds to mute (default: forever) |
+| `--target` | string | Yes | Chat to mute |
+| `--duration` | int | No | Seconds to mute (default: forever) |
 
 ```bash
 tlgrm mute --target @username
 tlgrm mute --target @username --duration 3600   # mute for 1 hour
 ```
 
-**Output:**
-
-```json
-{ "success": true }
-```
+**Output:** `{ "success": true }`
 
 ---
 
@@ -473,17 +463,13 @@ Unmute a previously muted chat.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat to unmute |
+| `--target` | string | Yes | Chat to unmute |
 
 ```bash
 tlgrm unmute --target @username
 ```
 
-**Output:**
-
-```json
-{ "success": true }
-```
+**Output:** `{ "success": true }`
 
 ---
 
@@ -493,10 +479,10 @@ Send a message or file to your own **Saved Messages** (the "Saved" chat in Teleg
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--text` | string | ⚠️ | Text to save. Required unless `--file` is given. |
-| `--file` | path | ⚠️ | File to save. Required unless `--text` is given. |
-| `--caption` | string | ❌ | Caption for the file |
-| `--voice` | flag | ❌ | Send the file as a voice note |
+| `--text` | string | One of | Text to save |
+| `--file` | path | One of | File to save |
+| `--caption` | string | No | Caption for the file |
+| `--voice` | flag | No | Send the file as a voice note |
 
 ```bash
 tlgrm saved --text "Remember to review this later"
@@ -513,8 +499,8 @@ Delete one or more messages.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat containing the messages |
-| `--message-ids` | int… | ✅ | One or more message IDs (space-separated) |
+| `--target` | string | Yes | Chat containing the messages |
+| `--message-ids` | int… | Yes | One or more message IDs (space-separated) |
 
 ```bash
 tlgrm delete --target @username --message-ids 137480 137481 137482
@@ -534,9 +520,9 @@ Create a new group or broadcast channel.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--title` | string | ✅ | Group or channel title |
-| `--members` | string… | ❌ | Initial members to add (usernames, IDs, or phones) |
-| `--channel` | flag | ❌ | Create a broadcast channel instead of a group |
+| `--title` | string | Yes | Group or channel title |
+| `--members` | string… | No | Initial members (usernames, IDs, or phones) |
+| `--channel` | flag | No | Create a broadcast channel instead of a group |
 
 ```bash
 tlgrm create-group --title "Project Team" --members @alice @bob
@@ -557,18 +543,14 @@ Add members to an existing group or channel.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Group/channel to add members to |
-| `--members` | string… | ✅ | Members to add (usernames, IDs, or phones) |
+| `--target` | string | Yes | Group/channel to add members to |
+| `--members` | string… | Yes | Members to add (usernames, IDs, or phones) |
 
 ```bash
 tlgrm add-members --target @somegroup --members @alice @bob
 ```
 
-**Output:**
-
-```json
-{ "success": true, "added": ["@alice", "@bob"] }
-```
+**Output:** `{ "success": true, "added": ["@alice", "@bob"] }`
 
 ---
 
@@ -578,18 +560,14 @@ Remove members from a group or channel.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Group/channel |
-| `--members` | string… | ✅ | Members to remove (usernames, IDs, or phones) |
+| `--target` | string | Yes | Group/channel |
+| `--members` | string… | Yes | Members to remove (usernames, IDs, or phones) |
 
 ```bash
 tlgrm remove-members --target @somegroup --members @alice
 ```
 
-**Output:**
-
-```json
-{ "success": true, "removed": ["@alice"] }
-```
+**Output:** `{ "success": true, "removed": ["@alice"] }`
 
 ---
 
@@ -599,17 +577,13 @@ Leave a group or channel.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Group/channel to leave |
+| `--target` | string | Yes | Group/channel to leave |
 
 ```bash
 tlgrm leave --target @somegroup
 ```
 
-**Output:**
-
-```json
-{ "success": true }
-```
+**Output:** `{ "success": true }`
 
 ---
 
@@ -619,9 +593,9 @@ Schedule a text message to be sent at a future time.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Recipient |
-| `--text` | string | ✅ | Text of the scheduled message |
-| `--at` | string | ✅ | When to send: seconds from now (integer) or ISO-8601 datetime |
+| `--target` | string | Yes | Recipient |
+| `--text` | string | Yes | Text of the scheduled message |
+| `--at` | string | Yes | When to send: seconds from now (integer) or ISO-8601 datetime |
 
 ```bash
 # 10 minutes from now
@@ -645,12 +619,12 @@ Send a poll or quiz to a chat.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--target` | string | ✅ | Chat to send the poll to |
-| `--question` | string | ✅ | Poll question |
-| `--option` | string | ✅ (×2+) | Answer option (repeatable; provide at least two) |
-| `--multiple` | flag | ❌ | Allow multiple answers |
-| `--quiz` | flag | ❌ | Make this a quiz (one correct answer) |
-| `--correct` | int | ❌ | Index (0-based) of the correct answer (quiz only) |
+| `--target` | string | Yes | Chat to send the poll to |
+| `--question` | string | Yes | Poll question |
+| `--option` | string | Yes (×2+) | Answer option (repeatable; at least two) |
+| `--multiple` | flag | No | Allow multiple answers |
+| `--quiz` | flag | No | Make this a quiz (one correct answer) |
+| `--correct` | int | No | Index (0-based) of the correct answer (quiz only) |
 
 ```bash
 # Regular poll
@@ -662,28 +636,32 @@ tlgrm poll --target @somegroup --question "Capital of France?" \
            --quiz --correct 1
 ```
 
-**Output:**
-
-```json
-{ "success": true, "message_id": 137482 }
-```
+**Output:** `{ "success": true, "message_id": 137482 }`
 
 ---
 
 ## `tlgrm transcribe`
 
-Transcribe an audio file to text using the configured speech-to-text backend. Runs locally — no Telegram login required.
+Transcribe an audio file using the configured speech-to-text backend. **No Telegram login required.**
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--file` | ✅ | Path to the audio file |
-| `--backend` | ❌ | Override the backend (`faster-whisper`, `whisper`, `whispercpp`, `vosk`, `parakeet`, `openai`, `groq`, `deepgram`, `elevenlabs`, `google`) |
-| `--model` | ❌ | Override the backend model |
+| `--file` | Yes | Path to the audio file |
+| `--backend` | No | Override backend: `faster-whisper`, `whisper`, `openai`, `groq`, `deepgram`, `elevenlabs`, `google` |
+| `--model` | No | Override the model (e.g. `large-v3-turbo`, `base`) |
 
 ```bash
+# Default (faster-whisper, tiny model)
 tlgrm transcribe --file voice.ogg
-tlgrm transcribe --file voice.ogg --backend faster-whisper --model base
-tlgrm transcribe --file voice.ogg --backend openai     # needs OPENAI_API_KEY
+
+# Large model for Arabic / multilingual accuracy
+tlgrm transcribe --file voice.ogg --model large-v3-turbo
+
+# Cloud backend
+tlgrm transcribe --file voice.ogg --backend openai   # needs OPENAI_API_KEY
+
+# Force a language
+TG_STT_LANGUAGE=ar tlgrm transcribe --file voice.ogg
 ```
 
 **Output:**
@@ -692,46 +670,53 @@ tlgrm transcribe --file voice.ogg --backend openai     # needs OPENAI_API_KEY
 { "success": true, "backend": "faster-whisper", "text": "..." }
 ```
 
-Local backends need their extra installed (e.g. `tlgrm[stt]`); cloud backends need their API key. See [Configuration → Speech-to-text](configuration.md#speech-to-text-backends).
+Local backends require their extra installed (e.g. `tlgrm[stt]`); cloud backends require their API key. See [Configuration → Speech-to-text](configuration.md#speech-to-text-backends).
 
 ---
 
 ## `tlgrm listen`
 
-Listen for **incoming** messages in the foreground and optionally forward them to a webhook. See the [Webhook & Daemon Guide](webhook-guide.md) for the full payload schema.
+Listen for **incoming** messages in the foreground and optionally forward them to a webhook.
 
 | Flag | Type | Description |
 |------|------|-------------|
-| `--webhook-url` | URL | Endpoint to POST each message to. If omitted, payloads are printed to the console. |
-| `--webhook-header` | `"Name: Value"` | Custom header to include in the POST. Repeatable. |
-| `--verbose` | flag | Print full JSON payloads and debug logs |
+| `--webhook-url` | URL | Endpoint to POST each message to (omit to print to console) |
+| `--webhook-header` | `"Name: Value"` | Custom header to include in the POST (repeatable) |
+| `--verbose` | flag | Print full JSON payloads and debug logs to stderr |
 
 ```bash
+# Forward to a webhook
 tlgrm listen --webhook-url https://example.com/webhook \
              --webhook-header "Authorization: Bearer SECRET"
+
+# Development: print to console
+tlgrm listen --verbose
 ```
 
-Runs until interrupted (`Ctrl+C`). Incoming media is auto-downloaded to `TG_DOWNLOADS_DIR`. Self-destructing (TTL) media is skipped; the payload includes `"media.self_destruct": true`.
+Runs until interrupted (`Ctrl+C`). Logs go to **stderr**. Incoming media is auto-downloaded to `TG_DOWNLOADS_DIR`. Self-destructing (TTL) media is skipped; the payload includes `"media.self_destruct": true`.
+
+See [Webhook & Daemon Guide](webhook-guide.md) for the full payload schema.
 
 ---
 
 ## `tlgrm daemon`
 
-Manage tlgrm as a background `systemd` **user** service. Requires `systemd`/`systemctl`. See the [Webhook & Daemon Guide](webhook-guide.md) for details.
+Manage tlgrm as a background `systemd` **user** service. Requires `systemd`/`systemctl`.
 
 ### `tlgrm daemon install`
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--webhook-url` | URL | ✅ | Endpoint to forward messages to (validated) |
-| `--webhook-header` | `"Name: Value"` | ❌ | Custom header. Repeatable. |
-| `--verbose` | flag | ❌ | Enable verbose logging in the daemon |
+| `--webhook-url` | URL | Yes | Endpoint to forward messages to |
+| `--webhook-header` | `"Name: Value"` | No | Custom header (repeatable) |
+| `--verbose` | flag | No | Enable verbose logging in the daemon |
 
 ```bash
-tlgrm daemon install --webhook-url https://example.com/webhook
+tlgrm daemon install --webhook-url https://example.com/webhook \
+                     --webhook-header "Authorization: Bearer YOUR_TOKEN"
 ```
 
-Writes a unit to `~/.config/systemd/user/tlgrm-daemon.service` (owner-only, `0600`), reloads systemd, enables and starts the service.
+Writes a unit to `~/.config/systemd/user/tlgrm-daemon.service` (owner-only, `0600`), reloads systemd, enables, and starts the service.
 
 ### `tlgrm daemon status`
 
@@ -739,7 +724,7 @@ Writes a unit to `~/.config/systemd/user/tlgrm-daemon.service` (owner-only, `060
 tlgrm daemon status
 ```
 
-Reports installation state and runtime status:
+**Output:**
 
 ```json
 {
@@ -761,7 +746,11 @@ Reports installation state and runtime status:
 tlgrm daemon logs
 ```
 
-Prints the 30 most recent journal lines for the service (raw `journalctl` output).
+Prints the 30 most recent journal lines. For a live tail:
+
+```bash
+journalctl --user -u tlgrm-daemon -f
+```
 
 ### `tlgrm daemon uninstall`
 
@@ -775,7 +764,7 @@ Stops, disables, and removes the service and its unit file.
 
 ## MCP tools
 
-The `tlgrm-mcp` stdio MCP server exposes Telegram operations as tools. Requires `pip install "tlgrm[mcp]"` and a prior `tlgrm login`. See [../README.md#mcp-server](../README.md#mcp-server) for the Claude Desktop configuration.
+The `tlgrm-mcp` stdio MCP server exposes Telegram operations as tools to any MCP-compatible AI assistant. Requires `pip install "tlgrm[mcp]"` and a prior `tlgrm login`. See [../README.md#mcp-server](../README.md#mcp-server) for client configuration.
 
 ### Read-only tier (default — no flags needed)
 
@@ -825,4 +814,4 @@ The `tlgrm-mcp` stdio MCP server exposes Telegram operations as tools. Requires 
 | `0` | Success |
 | `1` | Missing/invalid credentials, or not authorized (`tlgrm login` required) |
 
-Per-operation failures (e.g. an invalid target) are reported in the JSON output as `{"success": false, "error": "..."}` while still exiting `0`.
+Per-operation failures (e.g. an invalid target) are reported as `{"success": false, "error": "..."}` in the JSON output while still exiting `0`.

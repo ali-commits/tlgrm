@@ -8,10 +8,10 @@ Welcome to the tlgrm documentation. tlgrm is an unofficial, feature-rich command
 
 | Guide | What it covers |
 |-------|----------------|
-| [Getting Started](getting-started.md) | Prerequisites, installation, API credentials, first login, first message |
-| [Configuration](configuration.md) | Environment variables, session and download paths |
-| [Command Reference](commands.md) | Every command (~30 total), all flags, examples, and JSON output shapes; includes the MCP tools section |
-| [Webhook & Daemon Guide](webhook-guide.md) | Real-time webhooks, the systemd daemon, and the payload schema |
+| [Getting Started](getting-started.md) | Prerequisites, installation, API credentials, first login, first message, STT quick-start |
+| [Configuration](configuration.md) | All environment variables, session/download paths, STT backends, GPU setup |
+| [Command Reference](commands.md) | All 29 commands, flags, examples, JSON output shapes, and MCP tools |
+| [Webhook & Daemon Guide](webhook-guide.md) | Real-time webhooks, the systemd daemon, payload schema, delivery behavior |
 
 ## Quick links
 
@@ -32,8 +32,9 @@ export TG_API_HASH=your_api_hash_here
 # Authenticate (one-time, interactive)
 tlgrm login
 
-# Use it
+# Use it — every command prints clean JSON to stdout; logs go to stderr
 tlgrm chats --limit 10
+tlgrm chats | jq '.[].name'
 tlgrm send --target @username --text "Hello!"
 tlgrm react --target @username --message-id 137480 --emoji "👍"
 ```
@@ -42,4 +43,28 @@ New here? Start with **[Getting Started](getting-started.md)**.
 
 ## MCP server
 
-tlgrm ships a stdio MCP server (`tlgrm-mcp`) that exposes ~24 Telegram tools to AI assistants like Claude Desktop or Claude Code. It is **read-only by default**; write and destructive operations require explicit opt-in flags. See the [Command Reference — MCP tools](commands.md#mcp-tools) section and [../README.md#mcp-server](../README.md#mcp-server) for the Claude Desktop configuration.
+tlgrm ships a stdio MCP server (`tlgrm-mcp`) that exposes 24 Telegram tools to AI assistants like Claude Desktop or Claude Code. It is **read-only by default**; write and destructive operations require explicit opt-in flags.
+
+```json
+{
+  "mcpServers": {
+    "tlgrm": {
+      "command": "uvx",
+      "args": ["--from", "tlgrm[mcp]", "tlgrm-mcp"],
+      "env": { "TG_API_ID": "...", "TG_API_HASH": "..." }
+    }
+  }
+}
+```
+
+See the [Command Reference — MCP tools](commands.md#mcp-tools) section for the full tool list and permission tiers.
+
+## Speech-to-text highlights
+
+- **Local (multilingual):** `faster-whisper` (default) and `whisper` handle Arabic, English, and code-switching.
+- **Default model is `tiny`** — fast but limited. Use `TG_STT_MODEL=large-v3-turbo` for Arabic or multilingual accuracy.
+- **GPU:** faster-whisper auto-detects NVIDIA GPUs and falls back to CPU. Requires CUDA 12 runtime.
+- **Cloud:** openai, groq, deepgram, elevenlabs, google — set the API key, no extra package needed.
+- **Standalone:** `tlgrm transcribe --file voice.ogg` works without a Telegram login.
+
+See [Configuration → Speech-to-text backends](configuration.md#speech-to-text-backends) for the full reference.
