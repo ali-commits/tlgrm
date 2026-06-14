@@ -12,10 +12,19 @@ def test_faster_whisper_missing_returns_none(monkeypatch):
     assert local.faster_whisper_transcribe("/nonexistent.ogg", None) is None
 
 
-def test_vosk_without_model_path_returns_none(monkeypatch):
-    monkeypatch.setitem(sys.modules, "vosk", None)
-    monkeypatch.delenv("VOSK_MODEL_PATH", raising=False)
-    assert local.vosk_transcribe("/nonexistent.ogg", None) is None
+def test_whisper_missing_returns_none(monkeypatch):
+    monkeypatch.setitem(sys.modules, "whisper", None)
+    assert local.whisper_transcribe("/nonexistent.ogg", None) is None
+
+
+def test_language_none_by_default(monkeypatch):
+    monkeypatch.delenv("TG_STT_LANGUAGE", raising=False)
+    assert local._language() is None
+
+
+def test_language_from_env(monkeypatch):
+    monkeypatch.setenv("TG_STT_LANGUAGE", "ar")
+    assert local._language() == "ar"
 
 
 def test_fw_device_env_override(monkeypatch):
@@ -34,10 +43,3 @@ def test_fw_device_cuda_when_gpu_detected(monkeypatch):
     ct = pytest.importorskip("ctranslate2")
     monkeypatch.setattr(ct, "get_cuda_device_count", lambda: 1)
     assert local._fw_device() == "cuda"
-
-
-def test_parakeet_missing_returns_none(monkeypatch):
-    monkeypatch.setitem(sys.modules, "nemo", None)
-    monkeypatch.setitem(sys.modules, "nemo.collections", None)
-    monkeypatch.setitem(sys.modules, "nemo.collections.asr", None)
-    assert local.parakeet_transcribe("/nonexistent.ogg", None) is None
