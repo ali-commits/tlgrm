@@ -677,7 +677,7 @@ Transcribe an audio file to text using the configured speech-to-text backend. Ru
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--file` | ✅ | Path to the audio file |
-| `--backend` | ❌ | Override the backend (`faster-whisper`, `whisper`, `whispercpp`, `vosk`, `openai`, `groq`, `deepgram`, `elevenlabs`, `google`) |
+| `--backend` | ❌ | Override the backend (`faster-whisper`, `whisper`, `whispercpp`, `vosk`, `parakeet`, `openai`, `groq`, `deepgram`, `elevenlabs`, `google`) |
 | `--model` | ❌ | Override the backend model |
 
 ```bash

@@ -14,6 +14,7 @@ _LOCAL = {
     "whisper": local.whisper_transcribe,
     "whispercpp": local.whispercpp_transcribe,
     "vosk": local.vosk_transcribe,
+    "parakeet": local.parakeet_transcribe,
 }
 _CLOUD = {
     "openai": cloud.openai_transcribe,
