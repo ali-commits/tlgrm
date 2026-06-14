@@ -4,7 +4,7 @@
 
 **An unofficial, feature-rich command-line client, MCP server, and webhook daemon for Telegram, built on [Telethon](https://github.com/LonamiWebs/Telethon).**
 
-Drive your *personal* Telegram account from the terminal — send messages, pull history, download media, react, pin, schedule, run polls — and bridge incoming messages to an HTTP webhook in real time. Also ships as an **MCP server** so AI assistants like Claude can drive Telegram on your behalf.
+Drive your *personal* Telegram account from the terminal — or from an AI assistant — and bridge incoming messages to an HTTP webhook in real time.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
@@ -15,6 +15,15 @@ Drive your *personal* Telegram account from the terminal — send messages, pull
 > **Unofficial app notice:** tlgrm is an independent, unofficial client built on the Telegram API (via Telethon). It is **not affiliated with, endorsed by, or sponsored by Telegram**.
 
 ---
+
+## Features
+
+- **Personal account** — acts as *you* (MTProto user account, not a bot): read history, list members, message anyone you can.
+- **29 commands** — send/reply/edit/delete, history & global search, reactions, forwarding, pin & mute, group management, scheduling, polls.
+- **Clean JSON output** — commands print JSON to stdout (logs go to stderr), so it pipes straight into `jq` and scripts.
+- **Real-time webhooks + daemon** — forward incoming messages to an HTTP endpoint, optionally as a `systemd` background service.
+- **MCP server** — `tlgrm-mcp` lets AI assistants drive Telegram, read-only by default.
+- **Speech-to-text** — auto-transcribe incoming voice notes (multilingual, GPU-aware), or transcribe any file with `tlgrm transcribe`.
 
 ## Quick start
 
