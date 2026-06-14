@@ -171,7 +171,8 @@ def build_parser():
     p = sub.add_parser("transcribe", help="Transcribe an audio file (speech-to-text)")
     p.add_argument("--file", required=True, help="Path to the audio file")
     p.add_argument("--backend", help="Override the STT backend (faster-whisper, whisper, "
-                                     "whispercpp, vosk, openai, groq, deepgram, elevenlabs, google)")
+                                     "whispercpp, vosk, parakeet, openai, groq, deepgram, "
+                                     "elevenlabs, google)")
     p.add_argument("--model", help="Override the backend model")
 
     return parser

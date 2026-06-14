@@ -28,6 +28,22 @@ def _decode_wav16k(path):
         return None
 
 
+def _fw_device():
+    """Resolve faster-whisper device: TG_STT_DEVICE override, else auto-detect a
+    *usable* CUDA GPU via ctranslate2 (returns a GPU only if its runtime libs load),
+    else cpu."""
+    dev = os.getenv("TG_STT_DEVICE")
+    if dev:
+        return dev
+    try:
+        from ctranslate2 import get_cuda_device_count
+        if get_cuda_device_count() > 0:
+            return "cuda"
+    except Exception:
+        pass
+    return "cpu"
+
+
 def faster_whisper_transcribe(path, model):
     try:
         from faster_whisper import WhisperModel
@@ -35,15 +51,24 @@ def faster_whisper_transcribe(path, model):
         logger.debug("faster-whisper not installed (pip install 'tlgrm[stt]').")
         return None
     name = model or "tiny"
-    # Default to CPU so it works without CUDA; opt into GPU via TG_STT_DEVICE=cuda.
-    device = os.getenv("TG_STT_DEVICE", "cpu")
-    compute = os.getenv("TG_STT_COMPUTE", "int8" if device == "cpu" else "default")
-    key = ("faster-whisper", name, device, compute)
-    if key not in _models:
-        logger.info(f"Loading faster-whisper model '{name}' on {device} ({compute})...")
-        _models[key] = WhisperModel(name, device=device, compute_type=compute)
-    segments, _ = _models[key].transcribe(path)
-    return " ".join(s.text for s in segments).strip()
+    device = _fw_device()
+    # Try the resolved device; if a GPU was chosen but is unusable (CUDA libs
+    # missing — which surfaces at *load or inference* time), fall back to CPU.
+    devices = [device, "cpu"] if device != "cpu" else ["cpu"]
+    for dev in devices:
+        compute = os.getenv("TG_STT_COMPUTE") or ("float16" if dev == "cuda" else "int8")
+        key = ("faster-whisper", name, dev, compute)
+        try:
+            if key not in _models:
+                logger.info(f"Loading faster-whisper model '{name}' on {dev} ({compute})...")
+                _models[key] = WhisperModel(name, device=dev, compute_type=compute)
+            segments, _ = _models[key].transcribe(path)
+            return " ".join(s.text for s in segments).strip()
+        except Exception as e:
+            _models.pop(key, None)  # don't keep a broken model cached
+            if dev == "cpu":
+                raise
+            logger.warning(f"faster-whisper on {dev} failed ({e}); retrying on CPU.")
 
 
 def whisper_transcribe(path, model):
@@ -103,6 +128,40 @@ def vosk_transcribe(path, model):
                     parts.append(json.loads(rec.Result()).get("text", ""))
             parts.append(json.loads(rec.FinalResult()).get("text", ""))
         return " ".join(p for p in parts if p).strip()
+    finally:
+        try:
+            os.remove(wav)
+        except OSError:
+            pass
+
+
+def parakeet_transcribe(path, model):
+    """NVIDIA Parakeet (NeMo) — high-accuracy ASR, GPU-oriented.
+
+    Default model is the English `parakeet-tdt-0.6b-v2`; pass `--model
+    nvidia/parakeet-tdt-0.6b-v3` for the multilingual variant. Uses the GPU
+    automatically when available (CUDA), otherwise CPU.
+    """
+    try:
+        import nemo.collections.asr as nemo_asr
+    except ImportError:
+        logger.debug("nemo_toolkit not installed (pip install 'tlgrm[stt-parakeet]').")
+        return None
+    name = model or "nvidia/parakeet-tdt-0.6b-v2"
+    key = ("parakeet", name)
+    if key not in _models:
+        logger.info(f"Loading Parakeet model '{name}' (first load downloads the model)...")
+        _models[key] = nemo_asr.models.ASRModel.from_pretrained(model_name=name)
+    wav = _decode_wav16k(path)
+    if not wav:
+        return None
+    try:
+        output = _models[key].transcribe([wav])
+        if not output:
+            return None
+        first = output[0]
+        text = getattr(first, "text", first)
+        return text.strip() if isinstance(text, str) and text.strip() else None
     finally:
         try:
             os.remove(wav)

@@ -19,6 +19,10 @@ def test_transcribe_audio_unknown_backend_returns_none():
     assert stt.transcribe_audio("/x.ogg", backend="does-not-exist") is None
 
 
+def test_parakeet_is_registered():
+    assert "parakeet" in stt._LOCAL
+
+
 def test_transcribe_audio_backend_failure_returns_none(monkeypatch):
     def boom(path, model):
         raise RuntimeError("backend exploded")

@@ -77,11 +77,15 @@ tlgrm supports pluggable STT backends selected via environment variables or a co
 
 | Variable | Description |
 |----------|-------------|
-| `TG_STT_BACKEND` | Force a specific backend: `faster-whisper`, `whisper`, `whispercpp`, `vosk`, `openai`, `groq`, `deepgram`, `elevenlabs`, `google` |
+| `TG_STT_BACKEND` | Force a specific backend: `faster-whisper`, `whisper`, `whispercpp`, `vosk`, `parakeet`, `openai`, `groq`, `deepgram`, `elevenlabs`, `google` |
 | `TG_STT_MODEL` | Override the model name/size used by the selected backend |
 | `TG_STT_LANGUAGE` | Language code for Google STT (default `en-US`) |
-| `TG_STT_DEVICE` | faster-whisper device: `cpu` (default) or `cuda` for GPU |
-| `TG_STT_COMPUTE` | faster-whisper compute type (default `int8` on CPU) |
+| `TG_STT_DEVICE` | faster-whisper device: `auto` (default — uses the GPU if a usable CUDA device is found, otherwise CPU), or force `cpu` / `cuda` |
+| `TG_STT_COMPUTE` | faster-whisper compute type (default `int8` on CPU, `float16` on GPU) |
+
+**GPU acceleration:** with `TG_STT_DEVICE=auto` (the default), faster-whisper uses an NVIDIA GPU when one is usable and falls back to CPU otherwise. Using the GPU requires the CUDA 12 runtime + cuDNN to be installed (e.g. `pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`, or a system CUDA toolkit); without them it logs a warning and runs on CPU. `whisper` and `whisper.cpp` use the GPU automatically when built/installed with CUDA support. For best-in-class GPU accuracy on English, see the `parakeet` backend below.
+
+**Parakeet (`[stt-parakeet]`):** NVIDIA's NeMo `parakeet-tdt-0.6b-v2` — very high English accuracy, GPU-oriented, heavy install. Set `--backend parakeet` (or `TG_STT_BACKEND=parakeet`); pass `--model nvidia/parakeet-tdt-0.6b-v3` for the multilingual variant. Recommended only when you have an NVIDIA GPU.
 | `OPENAI_API_KEY` | API key for the OpenAI backend |
 | `GROQ_API_KEY` | API key for the Groq backend |
 | `DEEPGRAM_API_KEY` | API key for the Deepgram backend |

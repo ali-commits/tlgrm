@@ -290,7 +290,7 @@ tlgrm daemon uninstall
 
 When the `stt` extra is installed, the webhook daemon automatically transcribes incoming **voice notes and audio**, populating `media.transcription` in the webhook payload. You can also transcribe any audio file directly with **`tlgrm transcribe`** (no login required). tlgrm supports **pluggable STT backends**: local models and cloud APIs.
 
-**Default:** `faster-whisper` (local, lightweight, auto-downloads the model on first use; CPU by default, set `TG_STT_DEVICE=cuda` for GPU).
+**Default:** `faster-whisper` (local, lightweight, auto-downloads the model on first use). It **auto-detects an NVIDIA GPU** and uses it when usable, falling back to CPU otherwise (override with `TG_STT_DEVICE=cpu|cuda`). For best-in-class English accuracy on a GPU, the **`parakeet`** backend (`tlgrm[stt-parakeet]`, NVIDIA NeMo) is also available.
 
 ```bash
 tlgrm transcribe --file voice.ogg                       # default backend
@@ -303,6 +303,9 @@ pip install "tlgrm[stt]"     # requires FFmpeg on your system
 
 # Original OpenAI Whisper
 pip install "tlgrm[stt-whisper]"
+
+# NVIDIA Parakeet (GPU, best English accuracy — heavy, needs CUDA)
+pip install "tlgrm[stt-parakeet]"
 
 # Cloud backends — just set an API key (no extra package needed)
 export OPENAI_API_KEY=sk-...   # uses openai backend automatically
