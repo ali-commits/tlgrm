@@ -46,3 +46,32 @@ def test_env_overrides_bundled(monkeypatch):
     monkeypatch.setenv("TG_API_ID", "111")
     monkeypatch.setenv("TG_API_HASH", "envhash")
     assert config.get_api_credentials() == (111, "envhash")
+
+
+def test_session_path_default(monkeypatch):
+    monkeypatch.delenv("TG_SESSION_PATH", raising=False)
+    assert config.session_path().endswith("/.tlgrm/tg_session")
+
+
+def test_session_path_honors_env_set_after_import(monkeypatch):
+    # Resolved at call time, so a path set after import (e.g. by --session) wins.
+    monkeypatch.setenv("TG_SESSION_PATH", "/tmp/custom/mcp")
+    assert config.session_path() == "/tmp/custom/mcp"
+
+
+def test_get_client_uses_resolved_session(monkeypatch):
+    from tlgrm.core import client
+
+    captured = {}
+
+    class _FakeClient:
+        def __init__(self, session, api_id, api_hash):
+            captured["session"] = session
+
+    monkeypatch.setattr(client, "TelegramClient", _FakeClient)
+    monkeypatch.setattr(client, "ensure_dirs", lambda: None)
+    monkeypatch.setattr(client, "get_api_credentials", lambda: (1, "h"))
+    monkeypatch.setenv("TG_SESSION_PATH", "/tmp/sessions/daemon")
+
+    client.get_client()
+    assert captured["session"] == "/tmp/sessions/daemon"

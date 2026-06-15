@@ -3,8 +3,19 @@ import base64
 
 from .core.errors import CredentialsError
 
-SESSION_PATH = os.getenv("TG_SESSION_PATH", os.path.expanduser("~/.tlgrm/tg_session"))
 DOWNLOADS_DIR = os.getenv("TG_DOWNLOADS_DIR", os.path.expanduser("~/.tlgrm/downloads"))
+
+
+def session_path():
+    """Resolve the Telethon session base path at call time (so `--session` /
+    TG_SESSION_PATH set after import are honored). Each long-running consumer
+    (CLI, daemon, MCP server) should use its OWN session — a Telethon session is
+    single-process (sharing one risks `database is locked` / AUTH_KEY_DUPLICATED)."""
+    return os.getenv("TG_SESSION_PATH", os.path.expanduser("~/.tlgrm/tg_session"))
+
+
+# Back-compat snapshot for readers that import the constant directly.
+SESSION_PATH = session_path()
 
 _CREDENTIALS_HELP = (
     "Telegram API credentials are not configured.\n"
@@ -51,5 +62,5 @@ def get_api_credentials():
 
 def ensure_dirs():
     """Create the session and downloads directories if they don't exist."""
-    os.makedirs(os.path.dirname(SESSION_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(session_path()), exist_ok=True)
     os.makedirs(DOWNLOADS_DIR, exist_ok=True)

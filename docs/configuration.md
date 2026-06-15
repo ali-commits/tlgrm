@@ -48,13 +48,39 @@ To change a setting later, edit `~/.tlgrm/daemon.env` and restart the service:
 systemctl --user restart tlgrm-daemon
 ```
 
-### Running the daemon (or MCP server) and the CLI at the same time
+### Running the daemon, MCP server, and CLI at the same time
 
-The Telethon session is a **single-connection SQLite file**, so only **one** long-running process can hold it at a time. If the `tlgrm daemon`/`listen` listener or the `tlgrm-mcp` server is running and you also run a CLI command (e.g. `tlgrm send`) against the same account, you'll get a `database is locked` error.
+A Telethon session is **single-process**: it's a SQLite file that one connection holds while running, and the underlying Telegram auth key must not be used by two live connections at once (Telegram would invalidate it). So if the daemon (`tlgrm listen`) or the MCP server (`tlgrm-mcp`) is running and you point a second process at the **same** session, you'll get `database is locked` — and, worse, risk an `AUTH_KEY_DUPLICATED` logout.
 
-Options:
-- Stop the long-running consumer while you run one-off CLI commands, or
-- Point the second consumer at a **separate session** with its own `TG_SESSION_PATH` (it will need its own `tlgrm login`).
+The fix is the way Telegram itself works: an account can have **many** authorized sessions (one per "device"). Give **each long-running consumer its own session**. They then run simultaneously without conflict, all on the same account.
+
+Each session is a separate login. Set it up once per consumer:
+
+```bash
+# 1. Your everyday CLI keeps the default session (~/.tlgrm/tg_session)
+tlgrm login
+
+# 2. A dedicated session for the MCP server
+tlgrm --session ~/.tlgrm/mcp.session login
+
+# 3. A dedicated session for the background daemon
+tlgrm --session ~/.tlgrm/daemon.session login
+```
+
+Then point each consumer at its session:
+
+```bash
+# MCP server (e.g. in your MCP client config)
+tlgrm-mcp --session ~/.tlgrm/mcp.session --allow-write
+
+# Daemon — export the session before installing; it's captured into daemon.env
+export TG_SESSION_PATH=~/.tlgrm/daemon.session
+tlgrm daemon install --webhook-url https://example.com/webhook
+```
+
+Now the daemon listens, the MCP server answers your assistant, and your CLI runs one-off commands — all at once, no locks. The `--session PATH` flag works on every `tlgrm` command and on `tlgrm-mcp`; it overrides `TG_SESSION_PATH` for that process. Each session shows up as a separate device under Telegram's *Settings → Devices*, where you can review or revoke them.
+
+> One-off alternative: if you don't want extra sessions, just stop the long-running consumer while you run a CLI command against the shared session.
 
 ## Files and directories
 

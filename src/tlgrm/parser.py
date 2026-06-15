@@ -7,6 +7,11 @@ def build_parser():
     parser = argparse.ArgumentParser(
         prog="tlgrm",
         description="tlgrm - unofficial command-line client & webhook daemon for Telegram")
+    parser.add_argument(
+        "--session", metavar="PATH",
+        help="Telethon session base path to use for this command (overrides "
+             "TG_SESSION_PATH). Use a separate session per long-running consumer "
+             "so the CLI, daemon, and MCP server don't share one and lock each other out.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("login", help="Interactively log in to Telegram")

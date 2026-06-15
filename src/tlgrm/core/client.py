@@ -4,18 +4,20 @@ from contextlib import asynccontextmanager
 
 from telethon import TelegramClient
 
-from ..config import get_api_credentials, ensure_dirs, SESSION_PATH
+from ..config import get_api_credentials, ensure_dirs, session_path
 from .errors import NotAuthorizedError
 
 
 def get_client():
     """Build a TelegramClient using the configured session and credentials.
 
+    The session path is resolved at call time (config.session_path), so a
+    `--session` flag or TG_SESSION_PATH set just before this call is honored.
     Raises CredentialsError (from get_api_credentials) if creds are unset.
     """
     ensure_dirs()
     api_id, api_hash = get_api_credentials()
-    return TelegramClient(SESSION_PATH, api_id, api_hash)
+    return TelegramClient(session_path(), api_id, api_hash)
 
 
 def resolve_target(target):

@@ -38,6 +38,13 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
 
+    # A --session flag points this process at its own Telethon session (resolved
+    # at client-build time via config.session_path), so it never collides with a
+    # running daemon/MCP server on the single-process SQLite session.
+    if getattr(args, "session", None):
+        import os
+        os.environ["TG_SESSION_PATH"] = os.path.expanduser(args.session)
+
     try:
         if args.command in ("send", "reply", "saved") and not getattr(args, "text", None) and not getattr(args, "file", None):
             parser.error(f"At least one of --text or --file is required for {args.command}.")

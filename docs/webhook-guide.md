@@ -89,6 +89,8 @@ tlgrm daemon uninstall
 
 > **Daemon environment:** systemd user services don't inherit your shell, so `tlgrm daemon install` snapshots your relevant settings — STT model, GPU library path, cloud API keys — into an owner-only `~/.tlgrm/daemon.env` that the unit loads. Export what you want (e.g. `TG_STT_MODEL=large-v3-turbo`) **before** installing, or edit that file and `systemctl --user restart tlgrm-daemon`. See [configuration.md](configuration.md#for-the-systemd-daemon).
 
+> **Run it alongside the MCP server or CLI:** a Telethon session is single-process, so give the daemon its **own** session — log it in (`tlgrm --session ~/.tlgrm/daemon.session login`) and `export TG_SESSION_PATH=~/.tlgrm/daemon.session` before `tlgrm daemon install` (it's captured into `daemon.env`). Then the daemon, an MCP server, and your CLI run together without `database is locked`. See [running them concurrently](configuration.md#running-the-daemon-mcp-server-and-cli-at-the-same-time).
+
 ---
 
 ## Webhook payload schema
