@@ -63,6 +63,11 @@ def whisper_transcribe(path, model):
     except ImportError:
         logger.debug("openai-whisper not installed (pip install 'tlgrm[stt-whisper]').")
         return None
+    import shutil
+    if not shutil.which("ffmpeg"):
+        logger.error("ffmpeg not found — required for the 'whisper' backend "
+                     "(the default faster-whisper backend does not need it).")
+        return None
     name = model or "tiny"
     key = ("whisper", name)
     if key not in _models:

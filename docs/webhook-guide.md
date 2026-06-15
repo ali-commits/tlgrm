@@ -87,7 +87,7 @@ journalctl --user -u tlgrm-daemon -f
 tlgrm daemon uninstall
 ```
 
-> **Credentials for the daemon:** the service inherits your environment. Ensure `TG_API_ID` / `TG_API_HASH` are available to the systemd user manager — see [configuration.md](configuration.md#for-the-systemd-daemon).
+> **Daemon environment:** systemd user services don't inherit your shell, so `tlgrm daemon install` snapshots your relevant settings — STT model, GPU library path, cloud API keys — into an owner-only `~/.tlgrm/daemon.env` that the unit loads. Export what you want (e.g. `TG_STT_MODEL=large-v3-turbo`) **before** installing, or edit that file and `systemctl --user restart tlgrm-daemon`. See [configuration.md](configuration.md#for-the-systemd-daemon).
 
 ---
 

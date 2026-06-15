@@ -8,6 +8,37 @@ from urllib.parse import urlparse
 SERVICE_NAME = "tlgrm-daemon"
 USER_SERVICE_DIR = os.path.expanduser("~/.config/systemd/user")
 SERVICE_FILE_PATH = os.path.join(USER_SERVICE_DIR, f"{SERVICE_NAME}.service")
+ENV_FILE_PATH = os.path.expanduser("~/.tlgrm/daemon.env")
+
+# systemd user services do NOT inherit your interactive shell's exports, so we
+# snapshot the relevant settings into an env file the unit loads. This keeps the
+# daemon's STT model, GPU library path, and cloud API keys working.
+_ENV_KEYS = [
+    "TG_API_ID", "TG_API_HASH", "TG_SESSION_PATH", "TG_DOWNLOADS_DIR",
+    "TG_STT_BACKEND", "TG_STT_MODEL", "TG_STT_DEVICE", "TG_STT_COMPUTE",
+    "TG_STT_LANGUAGE", "HF_TOKEN", "LD_LIBRARY_PATH",
+    "OPENAI_API_KEY", "GROQ_API_KEY", "DEEPGRAM_API_KEY",
+    "ELEVENLABS_API_KEY", "GOOGLE_API_KEY",
+]
+
+
+def _write_env_file():
+    """Snapshot the relevant env vars currently set in the installing shell into
+    an owner-only env file the service loads. Returns the captured key names."""
+    lines = []
+    for k in _ENV_KEYS:
+        v = os.environ.get(k)
+        if v and "\n" not in v and "\r" not in v:
+            lines.append(f"{k}={v}")
+    os.makedirs(os.path.dirname(ENV_FILE_PATH), mode=0o700, exist_ok=True)
+    fd = os.open(ENV_FILE_PATH, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write("# tlgrm daemon environment — edit to add settings the service should use\n")
+        f.write("# (e.g. TG_STT_MODEL=large-v3-turbo, OPENAI_API_KEY=..., LD_LIBRARY_PATH=...)\n")
+        if lines:
+            f.write("\n".join(lines) + "\n")
+    os.chmod(ENV_FILE_PATH, 0o600)
+    return [line.split("=", 1)[0] for line in lines]
 
 
 def validate_webhook_url(url):
@@ -73,12 +104,21 @@ def daemon_install(webhook_url, webhook_headers=None, verbose=False):
             header_args.append(f'--webhook-header "{header_str}"')
     header_str = " ".join(header_args)
     
+    # Snapshot the installing shell's relevant env into an owner-only file the
+    # service loads (systemd user units don't inherit your shell environment).
+    try:
+        captured_env = _write_env_file()
+    except Exception as e:
+        print(json.dumps({"success": False, "error": f"could not write env file: {e}"}, indent=2))
+        return
+
     # Construct service contents
     service_content = f"""[Unit]
 Description=tlgrm webhook daemon
 After=network.target
 
 [Service]
+EnvironmentFile=-{ENV_FILE_PATH}
 ExecStart={tlgrm_path} listen --webhook-url {webhook_url} {header_str} {verbose_flag}
 Restart=always
 RestartSec=10
@@ -118,6 +158,8 @@ WantedBy=default.target
             "message": "tlgrm daemon installed and started successfully!",
             "service": SERVICE_NAME,
             "path": SERVICE_FILE_PATH,
+            "env_file": ENV_FILE_PATH,
+            "captured_env": captured_env,
             "webhook_url": webhook_url,
             "webhook_headers": webhook_headers or [],
             "executable": tlgrm_path

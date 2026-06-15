@@ -32,11 +32,29 @@ Add the `export` lines to your shell profile:
 
 ### For the systemd daemon
 
-The background daemon inherits the environment of the user session that installed it. If `TG_API_ID` and `TG_API_HASH` are exported before running `tlgrm daemon install`, the service picks them up automatically. To set them explicitly for the systemd user manager:
+systemd **user** services do **not** inherit your interactive shell's exports (`~/.bashrc` / `~/.zshrc`). So `tlgrm daemon install` snapshots the relevant settings from the installing shell into an owner-only env file at `~/.tlgrm/daemon.env`, which the unit loads via `EnvironmentFile=`. The captured variables include your STT config (`TG_STT_MODEL`, `TG_STT_DEVICE`, `TG_STT_LANGUAGE`, …), any cloud STT keys (`OPENAI_API_KEY`, …), `HF_TOKEN`, and `LD_LIBRARY_PATH` (so a GPU build keeps working under the service).
+
+Recommended flow — export everything you want first, then install:
 
 ```bash
-systemctl --user set-environment TG_API_ID=1234567 TG_API_HASH=your_api_hash_here
+export TG_STT_MODEL=large-v3-turbo
+export OPENAI_API_KEY=...        # only if using a cloud STT backend
+tlgrm daemon install --webhook-url https://example.com/webhook
 ```
+
+To change a setting later, edit `~/.tlgrm/daemon.env` and restart the service:
+
+```bash
+systemctl --user restart tlgrm-daemon
+```
+
+### Running the daemon (or MCP server) and the CLI at the same time
+
+The Telethon session is a **single-connection SQLite file**, so only **one** long-running process can hold it at a time. If the `tlgrm daemon`/`listen` listener or the `tlgrm-mcp` server is running and you also run a CLI command (e.g. `tlgrm send`) against the same account, you'll get a `database is locked` error.
+
+Options:
+- Stop the long-running consumer while you run one-off CLI commands, or
+- Point the second consumer at a **separate session** with its own `TG_SESSION_PATH` (it will need its own `tlgrm login`).
 
 ## Files and directories
 
@@ -47,6 +65,7 @@ systemctl --user set-environment TG_API_ID=1234567 TG_API_HASH=your_api_hash_her
 | `~/.tlgrm/downloads/` | webhook listener | Auto-downloaded incoming media |
 | `~/.tlgrm/config.toml` | user (optional) | STT backend preferences |
 | `~/.config/systemd/user/tlgrm-daemon.service` | `tlgrm daemon install` | systemd unit (written `0600`) |
+| `~/.tlgrm/daemon.env` | `tlgrm daemon install` | env snapshot the service loads (owner-only `0600`) |
 
 > **Security:** the session file grants full access to your Telegram account, and the systemd unit may embed webhook auth headers. Both are kept private. Never commit them to version control — the default `.gitignore` already excludes session files.
 
