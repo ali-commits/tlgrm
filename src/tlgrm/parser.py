@@ -138,9 +138,16 @@ def build_parser():
     p.add_argument("--quiz", action="store_true")
     p.add_argument("--correct", type=int, help="Index of the correct answer (quiz)")
 
+    _only_help = ("Whitelist: only listen to this chat/user (@username, id, or "
+                  "phone). Repeatable or comma-separated. Matches the chat or the sender.")
+    _ignore_help = ("Blacklist: never listen to this chat/user (@username, id, or "
+                    "phone). Repeatable or comma-separated. Matches the chat or the sender.")
+
     p = sub.add_parser("listen", help="Run webhook listener for new messages")
     p.add_argument("--webhook-url")
     p.add_argument("--webhook-header", action="append")
+    p.add_argument("--only", action="append", metavar="CHAT", help=_only_help)
+    p.add_argument("--ignore", action="append", metavar="CHAT", help=_ignore_help)
     p.add_argument("--verbose", action="store_true")
 
     dp = sub.add_parser("daemon", help="Manage tlgrm systemd background daemon")
@@ -148,6 +155,8 @@ def build_parser():
     ip = dsub.add_parser("install", help="Install & start systemd user daemon")
     ip.add_argument("--webhook-url", required=True)
     ip.add_argument("--webhook-header", action="append")
+    ip.add_argument("--only", action="append", metavar="CHAT", help=_only_help)
+    ip.add_argument("--ignore", action="append", metavar="CHAT", help=_ignore_help)
     ip.add_argument("--verbose", action="store_true")
     dsub.add_parser("uninstall", help="Stop & remove systemd user daemon")
     dsub.add_parser("status", help="Show daemon systemd status")

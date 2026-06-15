@@ -3,6 +3,17 @@
 All notable changes to tlgrm are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Listener chat/user filtering.** `tlgrm listen` and `tlgrm daemon install` now
+  accept `--only CHAT` (whitelist — forward only matching chats/users) and
+  `--ignore CHAT` (blacklist — never forward matching chats/users). Each takes an
+  `@username`, id, or phone, is repeatable and comma-separated, and matches a
+  message by its chat *or* its sender. The filter is applied before any media
+  download, so ignored chats cost nothing.
+
 ## [0.2.0] — 2026-06-16
 
 This release rolls up everything since the first public release (0.1.0). The

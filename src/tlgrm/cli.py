@@ -60,10 +60,12 @@ def main():
             text = transcribe_audio(args.file, backend=args.backend, model=args.model)
             emit({"success": text is not None, "backend": backend, "text": text})
         elif args.command == "listen":
-            asyncio.run(run_listener(args.webhook_url, args.webhook_header, args.verbose))
+            asyncio.run(run_listener(args.webhook_url, args.webhook_header,
+                                     args.verbose, args.only, args.ignore))
         elif args.command == "daemon":
             if args.daemon_command == "install":
-                daemon_install(args.webhook_url, args.webhook_header, args.verbose)
+                daemon_install(args.webhook_url, args.webhook_header, args.verbose,
+                               only=args.only, ignore=args.ignore)
             elif args.daemon_command == "uninstall":
                 daemon_uninstall()
             elif args.daemon_command == "status":

@@ -46,6 +46,52 @@ Header values are redacted from logs.
 
 ---
 
+## Filtering which chats to listen to
+
+By default the listener processes every incoming message. Two repeatable options
+let you narrow that down — they work in both foreground (`tlgrm listen`) and
+daemon (`tlgrm daemon install`) mode:
+
+- `--only CHAT` — **whitelist.** Forward *only* messages that match. Everything
+  else is ignored.
+- `--ignore CHAT` — **blacklist.** Never forward messages that match.
+
+Each `CHAT` is an `@username`, a numeric chat/user id, or a phone number. Both
+options are repeatable and accept comma-separated lists, so these are equivalent:
+
+```bash
+tlgrm listen --ignore @noisygroup --ignore @spammer
+tlgrm listen --ignore @noisygroup,@spammer
+```
+
+A message **matches** if its **chat** or its **sender** matches the target. That
+means `--ignore @someone` drops both their direct messages *and* their messages
+inside groups, and `--only @myboss` forwards their messages wherever they appear.
+
+```bash
+# Only forward messages from one work group and one person
+tlgrm listen --webhook-url https://example.com/hook \
+             --only @work_group --only @manager
+
+# Forward everything except two noisy chats
+tlgrm listen --webhook-url https://example.com/hook \
+             --ignore @announcements --ignore -1001234567890
+```
+
+If both are given, a message must pass the whitelist **and** not be on the
+blacklist. Targets are resolved once at startup; the filter is applied **before**
+any media is downloaded, so ignored chats cost nothing. For ids, use the value
+shown by `tlgrm chats` (supergroups/channels look like `-100…`).
+
+The same flags work for the daemon:
+
+```bash
+tlgrm daemon install --webhook-url https://example.com/hook \
+                     --ignore @announcements,@noisygroup
+```
+
+---
+
 ## Background daemon (systemd)
 
 Instead of keeping a terminal open, run tlgrm as a persistent `systemd` **user** service. Requires `systemd`/`systemctl`.

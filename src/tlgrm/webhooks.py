@@ -5,7 +5,7 @@ import asyncio
 import logging
 import httpx
 from datetime import datetime, timezone
-from telethon import events
+from telethon import events, utils
 from .config import DOWNLOADS_DIR
 from .core.client import get_client, ensure_authorized
 from .core.errors import NotAuthorizedError
@@ -35,10 +35,51 @@ async def forward_webhook(url, payload, headers=None, retries=3):
         if attempt < retries:
             await asyncio.sleep(2 ** (attempt - 1))
 
-async def run_listener(webhook_url=None, webhook_headers=None, verbose=False):
+def _split_tokens(values):
+    """Flatten a repeatable option into individual tokens, splitting on commas
+    so `--ignore @a,@b` and `--ignore @a --ignore @b` behave the same."""
+    tokens = []
+    for value in values or []:
+        tokens.extend(t.strip() for t in value.split(",") if t.strip())
+    return tokens
+
+
+async def _resolve_filters(client, tokens):
+    """Resolve filter targets (@username, id, or phone) into a comparable set of
+    marked peer-ids plus lowercased usernames. Best-effort: an unresolvable token
+    is still matched by literal id/username so a typo'd or unseen chat isn't
+    silently ignored."""
+    ids, usernames = set(), set()
+    for token in tokens:
+        try:
+            entity = await client.get_entity(token)
+            ids.add(utils.get_peer_id(entity))  # marked id, matches event.chat_id
+            uname = getattr(entity, "username", None)
+            if uname:
+                usernames.add(uname.lower())
+        except Exception as e:
+            logger.warning(f"Could not resolve filter target {token!r} ({e}); "
+                           "matching it literally by id/username.")
+            stripped = token.lstrip("@")
+            if stripped.lstrip("-").isdigit():
+                ids.add(int(stripped))
+            else:
+                usernames.add(stripped.lower())
+    return ids, usernames
+
+
+def _matches(ids, usernames, chat_id, sender_id, chat_username, sender_username):
+    """True if this message's chat OR sender matches the id/username sets."""
+    if chat_id in ids or sender_id in ids:
+        return True
+    return any(u and u.lower() in usernames for u in (chat_username, sender_username))
+
+
+async def run_listener(webhook_url=None, webhook_headers=None, verbose=False,
+                       only=None, ignore=None):
     if verbose:
         logger.setLevel(logging.DEBUG)
-        
+
     client = get_client()
     try:
         await ensure_authorized(client)
@@ -46,6 +87,15 @@ async def run_listener(webhook_url=None, webhook_headers=None, verbose=False):
         logger.error(str(e))
         await client.disconnect()
         return
+
+    # Resolve chat/user filters once at startup. `only` is a whitelist (forward
+    # only matches); `ignore` is a blacklist (never forward matches).
+    only_ids, only_names = await _resolve_filters(client, _split_tokens(only))
+    ignore_ids, ignore_names = await _resolve_filters(client, _split_tokens(ignore))
+    if only_ids or only_names:
+        logger.info(f"Whitelist active — only listening to {len(only_ids | only_names)} chat(s)/user(s).")
+    if ignore_ids or ignore_names:
+        logger.info(f"Blacklist active — ignoring {len(ignore_ids | ignore_names)} chat(s)/user(s).")
 
     # Pre-warm the STT model so the first incoming voice note isn't delayed by a load.
     preload()
@@ -77,7 +127,20 @@ async def run_listener(webhook_url=None, webhook_headers=None, verbose=False):
             msg = event.message
             chat = await event.get_chat()
             sender = await event.get_sender()
-            
+
+            # Apply chat/user filters before any download or forwarding work.
+            chat_username = getattr(chat, "username", None)
+            sender_username = getattr(sender, "username", None)
+            if (only_ids or only_names) and not _matches(
+                    only_ids, only_names, event.chat_id, event.sender_id,
+                    chat_username, sender_username):
+                logger.debug(f"Skipping message {msg.id}: not in whitelist.")
+                return
+            if _matches(ignore_ids, ignore_names, event.chat_id, event.sender_id,
+                        chat_username, sender_username):
+                logger.debug(f"Skipping message {msg.id}: chat/sender is blacklisted.")
+                return
+
             # Construct sender details
             sender_info = serialize.serialize_sender(sender)
             chat_type = ("user" if event.is_private else "group" if event.is_group

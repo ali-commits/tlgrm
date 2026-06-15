@@ -51,6 +51,18 @@ def validate_webhook_url(url):
         raise ValueError("Webhook URL must not contain whitespace or control characters")
 
 
+def validate_filter_tokens(tokens):
+    """Filter targets (@username/id/phone) are embedded in the systemd ExecStart
+    line, so reject anything with whitespace, quotes, or control characters that
+    could break or inject into the unit."""
+    for token in tokens or []:
+        if not token:
+            raise ValueError("Empty --only/--ignore value.")
+        if any(c.isspace() for c in token) or any(ord(c) < 32 for c in token) \
+                or any(c in token for c in ('"', "'", "$", "`", ";", "\\")):
+            raise ValueError(f"Filter target contains illegal characters: {token!r}")
+
+
 def validate_webhook_headers(headers):
     """Ensure each header is 'Name: Value' with no characters that could break
     the systemd ExecStart line."""
@@ -77,7 +89,8 @@ def run_systemctl_cmd(args):
     except subprocess.CalledProcessError as e:
         return False, e.stdout, e.stderr
 
-def daemon_install(webhook_url, webhook_headers=None, verbose=False):
+def daemon_install(webhook_url, webhook_headers=None, verbose=False,
+                   only=None, ignore=None):
     if not check_systemctl():
         print(json.dumps({"success": False, "error": "systemctl not found. Is systemd installed?"}, indent=2))
         return
@@ -85,6 +98,8 @@ def daemon_install(webhook_url, webhook_headers=None, verbose=False):
     try:
         validate_webhook_url(webhook_url)
         validate_webhook_headers(webhook_headers)
+        validate_filter_tokens(only)
+        validate_filter_tokens(ignore)
     except ValueError as e:
         print(json.dumps({"success": False, "error": str(e)}, indent=2))
         return
@@ -103,7 +118,12 @@ def daemon_install(webhook_url, webhook_headers=None, verbose=False):
         for header_str in webhook_headers:
             header_args.append(f'--webhook-header "{header_str}"')
     header_str = " ".join(header_args)
-    
+
+    # Chat/user filters (validated above to be shell-safe, so embed unquoted).
+    filter_args = " ".join(
+        [f"--only {t}" for t in (only or [])] + [f"--ignore {t}" for t in (ignore or [])]
+    )
+
     # Snapshot the installing shell's relevant env into an owner-only file the
     # service loads (systemd user units don't inherit your shell environment).
     try:
@@ -119,7 +139,7 @@ After=network.target
 
 [Service]
 EnvironmentFile=-{ENV_FILE_PATH}
-ExecStart={tlgrm_path} listen --webhook-url {webhook_url} {header_str} {verbose_flag}
+ExecStart={tlgrm_path} listen --webhook-url {webhook_url} {header_str} {filter_args} {verbose_flag}
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -162,6 +182,8 @@ WantedBy=default.target
             "captured_env": captured_env,
             "webhook_url": webhook_url,
             "webhook_headers": webhook_headers or [],
+            "only": only or [],
+            "ignore": ignore or [],
             "executable": tlgrm_path
         }, indent=2))
         
