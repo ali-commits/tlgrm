@@ -261,10 +261,10 @@ tlgrm daemon …                       # hidden alias for `server …` (back-com
 `tlgrm-mcp` becomes a thin bridge: on startup it connects to the server socket
 with its declared tier (`read`/`write`/`destructive` from the existing flags)
 and an optional `--account`. Each MCP tool call is forwarded as a server request;
-the server enforces the tier and the write-guard. If no server is running, the
-bridge starts one on demand (or errors with guidance — see open questions). The
-tool surface (`whoami`, `list_chats`, `send_message`, …) is unchanged for the AI
-host.
+the server enforces the tier and the write-guard. **If no server is running, the
+bridge auto-spawns one** (a detached `tlgrm server start`) and connects to it, so
+the AI host never has to manage server lifecycle. The tool surface (`whoami`,
+`list_chats`, `send_message`, …) is unchanged for the AI host.
 
 ## 16. Webhook payload change
 
@@ -346,11 +346,14 @@ All Telegram I/O mocked; no live network.
 7. **MCP bridge** — `tlgrm-mcp` as a server client; server-side tier enforcement.
 8. **Docs, migration, polish** — ship 0.3.0.
 
-## 23. Open questions
+## 23. Resolved decisions
 
-- **MCP with no server:** auto-spawn a server on demand, or require the user to
-  start one? (Leaning: auto-spawn if installed, else a clear error.)
-- **Recurring schedules** beyond daily windows (cron expressions): include a
-  minimal `--daily` now, defer cron.
-- **`server status` for non-server users:** should `status` with no server simply
-  report "not running" rather than error (yes, planned).
+- **MCP with no server → auto-spawn.** The `tlgrm-mcp` bridge spawns a detached
+  server on demand and connects to it; the AI host never manages lifecycle.
+- **STT is server-global** (single shared model set + global `enabled`), not
+  per-account.
+- **Scheduling recurrence:** ship `--at` (one-shot), `--in` (relative), and
+  `--daily HH:MM` (plus listening windows, which are daily jobs) in 0.3.0. Full
+  cron expressions are deferred to a later release.
+- **`server status` with no server** reports `not running` and exits 0 (it is a
+  query, not an error).
