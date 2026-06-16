@@ -15,6 +15,17 @@ def _parse_when(value):
     return datetime.datetime.fromisoformat(value)
 
 
+def _parse_duration(value):
+    """Parse a relative delay like '90s', '30m', '2h', '1d' into a timedelta."""
+    units = {"s": "seconds", "m": "minutes", "h": "hours", "d": "days"}
+    v = value.strip().lower()
+    if v and v[-1] in units and v[:-1].isdigit():
+        return datetime.timedelta(**{units[v[-1]]: int(v[:-1])})
+    if v.isdigit():
+        return datetime.timedelta(seconds=int(v))
+    raise TlgrmError(f"Invalid duration: {value!r} (use 90s, 30m, 2h, 1d).")
+
+
 async def execute(client, args, account=None):
     """Run one command against a connected client; return its result dict."""
     from .write_guard import check_write
@@ -84,8 +95,17 @@ async def execute(client, args, account=None):
     elif cmd == "leave":
         return {"success": True, **await chats.leave(client, args.target)}
     elif cmd == "schedule":
-        return {"success": True, **await messages.schedule_message(
-            client, args.target, _parse_when(args.at), args.text)}
+        sub = args.schedule_command
+        if sub == "send":
+            when = _parse_when(args.at) if args.at else _parse_duration(args.in_)
+            return {"success": True, **await messages.schedule_message(
+                client, args.target, when, args.text)}
+        elif sub == "list":
+            return await messages.list_scheduled(client, args.target)
+        elif sub == "cancel":
+            return {"success": True, **await messages.cancel_scheduled(
+                client, args.target, args.ids)}
+        raise TlgrmError(f"Unknown schedule subcommand: {sub!r}")
     elif cmd == "poll":
         return {"success": True, **await messages.send_poll(
             client, args.target, args.question, args.options,

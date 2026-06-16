@@ -7,7 +7,7 @@ from . import accounts
 # Commands that send/post to a target, and which arg holds that target.
 _WRITE_TARGET = {
     "send": "target", "reply": "target", "edit": "target", "react": "target",
-    "pin": "target", "schedule": "target", "poll": "target",
+    "pin": "target", "poll": "target",
     "forward": "to_chat",
 }
 
@@ -15,6 +15,8 @@ _WRITE_TARGET = {
 def write_target(cmd, args):
     """The target a write command acts on, or None if the command isn't a
     guarded write (e.g. reads, or `saved` which always goes to yourself)."""
+    if cmd == "schedule":
+        return getattr(args, "target", None) if getattr(args, "schedule_command", None) == "send" else None
     field = _WRITE_TARGET.get(cmd)
     return getattr(args, field, None) if field else None
 

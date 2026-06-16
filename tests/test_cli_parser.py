@@ -86,3 +86,11 @@ def test_filter_write_subcommands():
     assert args.targets == ["@boss"]
     args = parser.parse_args(["filter", "write", "mode", "allow"])
     assert args.mode == "allow"
+
+
+def test_schedule_subcommands():
+    parser = build_parser()
+    a = parser.parse_args(["schedule", "send", "--target", "@x", "--text", "hi", "--in", "2h"])
+    assert a.schedule_command == "send" and a.in_ == "2h"
+    a = parser.parse_args(["schedule", "cancel", "--target", "@x", "--id", "5", "6"])
+    assert a.schedule_command == "cancel" and a.ids == [5, 6]
