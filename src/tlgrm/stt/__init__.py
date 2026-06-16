@@ -44,6 +44,12 @@ def transcribe_audio(file_path, backend=None, model=None):
         return None
 
 
+def reset_models():
+    """Drop cached STT models so the next transcription reloads with current
+    settings (frees memory after a backend/model/device change)."""
+    local._models.clear()
+
+
 def preload():
     """Warm the configured local STT model (e.g. at daemon startup) so the first
     real voice note isn't delayed by a model load. Best-effort; no-op for cloud

@@ -18,8 +18,9 @@ def _fw_device():
     """Resolve faster-whisper device: TG_STT_DEVICE override, else auto-detect a
     *usable* CUDA GPU via ctranslate2 (returns a GPU only if its runtime libs load),
     else cpu."""
-    dev = os.getenv("TG_STT_DEVICE")
-    if dev:
+    from .settings import resolve_device
+    dev = resolve_device()
+    if dev and dev != "auto":
         return dev
     try:
         from ctranslate2 import get_cuda_device_count

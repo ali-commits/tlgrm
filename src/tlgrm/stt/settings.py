@@ -59,3 +59,20 @@ def resolve_backend():
 def resolve_model():
     """Resolve the configured model name, or None to use the backend default."""
     return os.getenv("TG_STT_MODEL") or _load_config().get("model")
+
+
+def resolve_device():
+    """Explicit STT device ('cpu'/'cuda'/'auto'), or None to auto-detect.
+    Precedence: TG_STT_DEVICE env > [stt].device > None (auto)."""
+    return os.getenv("TG_STT_DEVICE") or _load_config().get("device")
+
+
+def is_enabled():
+    """Whether incoming-voice auto-transcription is on (default True)."""
+    return bool(_load_config().get("enabled", True))
+
+
+def stt_settings():
+    """Status snapshot for `tlgrm stt status`."""
+    return {"enabled": is_enabled(), "backend": resolve_backend(),
+            "model": resolve_model(), "device": resolve_device() or "auto"}
