@@ -13,6 +13,11 @@ async def handle_request(manager, req):
     cmd = req.get("cmd")
     if cmd == "ping":
         return ok(rid, {"pong": True})
+    if cmd == "reload":
+        if not is_allowed(req.get("tier", "read"), "reload"):
+            return err(rid, "PermissionError", "'reload' requires a higher tier")
+        await manager.reload_listener(req.get("account"))
+        return ok(rid, {"reloaded": req.get("account")})
     if not is_allowed(req.get("tier", "read"), cmd):
         return err(rid, "PermissionError",
                    f"'{cmd}' requires a higher permission tier")

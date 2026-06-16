@@ -40,3 +40,15 @@ def test_error_is_mapped(monkeypatch):
     assert out["ok"] is False
     assert out["error"]["type"] == "NotAuthorizedError"
     assert "nope" in out["error"]["message"]
+
+
+def test_reload_control_command():
+    class _M:
+        def __init__(self): self.reloaded = None
+        async def reload_listener(self, account=None): self.reloaded = account
+        async def get(self, account=None): raise AssertionError("not a telegram op")
+    m = _M()
+    out = asyncio.run(handler.handle_request(
+        m, {"id": 7, "cmd": "reload", "account": "work", "tier": "read"}))
+    assert out["ok"] and out["data"] == {"reloaded": "work"}
+    assert m.reloaded == "work"
