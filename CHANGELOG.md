@@ -3,7 +3,7 @@
 All notable changes to tlgrm are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0] — 2026-06-16
 
 ### Changed
 
@@ -48,6 +48,14 @@ All notable changes to tlgrm are documented here. This project adheres to
 - **Listening windows.** `tlgrm listening window set 09:00-17:00` restricts an
   account to listen only during that daily range (overnight ranges supported);
   `show`/`clear` to inspect/remove.
+
+### Internal
+
+- Adopted a formatter, linter, and two type checkers: **ruff** (format + lint),
+  **mypy** (`strict`), and **pyrefly**, wired into **prek** pre-commit hooks. The
+  entire `src/` tree is now fully type-annotated and passes both checkers; tests
+  run in parallel (`pytest-xdist`) with a per-test timeout. See `CONTRIBUTING.md`.
+- Added a project logo.
 
 ## [0.2.1] — 2026-06-16
 
