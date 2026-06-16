@@ -7,7 +7,7 @@ COMMAND_TIERS = {
     # read
     "chats": "read", "history": "read", "search": "read", "whoami": "read",
     "user-info": "read", "chat-info": "read", "members": "read", "download": "read",
-    "ping": "read", "reload": "read", "stt_reload": "read",
+    "ping": "read", "reload": "read", "stt_reload": "read", "stt_status": "read",
     # write
     "send": "write", "reply": "write", "edit": "write", "read": "write",
     "react": "write", "forward": "write", "pin": "write", "unpin": "write",

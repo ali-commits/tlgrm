@@ -28,4 +28,10 @@ def set_config(backend=None, model=None, device=None):
 
 
 def status():
-    emit({"success": True, **settings.stt_settings()})
+    out = {"success": True, **settings.stt_settings()}
+    # The warm models live in the server process, so report them only when it's up.
+    if ipc.is_server_running():
+        resp = ipc.request_sync("stt_status", args={}, tier="read")
+        if isinstance(resp, dict) and resp.get("ok"):
+            out["loaded"] = resp["data"].get("loaded", [])
+    emit(out)

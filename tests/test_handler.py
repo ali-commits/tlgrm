@@ -64,3 +64,14 @@ def test_stt_reload_control_command(monkeypatch):
     out = asyncio.run(handler.handle_request(_M(), {"id": 5, "cmd": "stt_reload", "tier": "read"}))
     assert out["ok"] and out["data"] == {"stt_reloaded": True}
     assert calls["reset"] == 1
+
+
+def test_stt_status_control_command(monkeypatch):
+    from tlgrm.stt import local
+    monkeypatch.setattr(local, "_models", {("faster-whisper", "tiny", "cpu", "int8"): object()})
+
+    class _M:
+        async def get(self, account=None): raise AssertionError("not a telegram op")
+    out = asyncio.run(handler.handle_request(_M(), {"id": 6, "cmd": "stt_status", "tier": "read"}))
+    assert out["ok"]
+    assert out["data"]["loaded"] == ["faster-whisper/tiny/cpu/int8"]

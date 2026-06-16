@@ -21,9 +21,13 @@ async def handle_request(manager, req):
     if cmd == "stt_reload":
         if not is_allowed(req.get("tier", "read"), "stt_reload"):
             return err(rid, "PermissionError", "'stt_reload' requires a higher tier")
-        import tlgrm.stt as stt
+        from .. import stt
         stt.reset_models()
         return ok(rid, {"stt_reloaded": True})
+    if cmd == "stt_status":
+        from ..stt import local
+        loaded = ["/".join(str(p) for p in k) for k in sorted(local._models)]
+        return ok(rid, {"loaded": loaded})
     if not is_allowed(req.get("tier", "read"), cmd):
         return err(rid, "PermissionError",
                    f"'{cmd}' requires a higher permission tier")
