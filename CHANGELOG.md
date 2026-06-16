@@ -25,6 +25,7 @@ All notable changes to tlgrm are documented here. This project adheres to
   socket. CLI commands automatically route through it when it's running (fast,
   no per-command login) and fall back to a direct connection when it isn't —
   which structurally eliminates the "database is locked" session conflict.
+  `tlgrm server install` runs it as a systemd user service.
 - **Server-side per-account listening with live config.** With the server
   running, each account listens for incoming messages independently. Configure
   it live (no restart): `tlgrm listening enable/disable`, `tlgrm webhook
