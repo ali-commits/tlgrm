@@ -79,7 +79,8 @@ def main():
             from .dispatch import run_account_command
             run_account_command(args)
         else:
-            asyncio.run(run_command(args))
+            from .dispatch import run_command_routed
+            run_command_routed(args)
     except KeyboardInterrupt:
         print("\nExiting...", file=sys.stderr)
         sys.exit(0)

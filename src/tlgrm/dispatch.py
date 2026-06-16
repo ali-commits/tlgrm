@@ -50,3 +50,28 @@ async def run_command(args):
         return
     async with open_client(account) as client:
         emit(await execute(client, args))
+
+
+def run_command_routed(args):
+    """Dual-mode entry for authenticated commands: route through a running
+    server, else run directly. login / account-add always go direct (they own
+    interactive TTY and session creation)."""
+    import asyncio
+    from . import ipc
+    from .output import emit
+
+    direct_only = args.command in ("login",) or (
+        args.command == "account" and getattr(args, "account_command", None) == "add")
+    if direct_only or not ipc.is_server_running():
+        asyncio.run(run_command(args))
+        return
+
+    payload = {k: v for k, v in vars(args).items()
+               if k not in ("command", "account", "session")}
+    resp = ipc.request_sync(args.command, account=getattr(args, "account", None),
+                            args=payload, tier="destructive")
+    if resp.get("ok"):
+        emit(resp["data"])
+    else:
+        e = resp.get("error", {})
+        emit({"success": False, "error": e.get("message", "server error")})
