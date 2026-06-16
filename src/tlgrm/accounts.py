@@ -55,9 +55,14 @@ def save_config(data):
     os.makedirs(os.path.dirname(path) or ".", mode=0o700, exist_ok=True)
     tmp = path + ".tmp"
     fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "wb") as f:
-        tomli_w.dump(_strip_none(data), f)
-    os.replace(tmp, path)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            tomli_w.dump(_strip_none(data), f)
+        os.replace(tmp, path)
+    except Exception:
+        if os.path.exists(tmp):
+            os.unlink(tmp)  # don't leave a stale temp file behind
+        raise
     os.chmod(path, 0o600)
 
 
@@ -143,15 +148,14 @@ def migrate_legacy_session():
 def session_path_for(account=None, must_exist=True):
     """Resolve the session base path for a command.
 
-    A TG_SESSION_PATH / --session override still wins (deprecated). Otherwise the
-    selected account's session is used. During login (`must_exist=False`) the name
-    need not be registered yet.
+    For normal commands a TG_SESSION_PATH / --session override still wins
+    (deprecated low-level escape hatch). During login (`must_exist=False`) the
+    override is ignored: the new session must land at the named account's path so
+    it matches where the account is registered.
     """
+    if not must_exist:
+        return account_session_path(account or "default")
     override = os.getenv("TG_SESSION_PATH")
     if override:
         return override
-    if must_exist:
-        account = resolve_account(account)
-    else:
-        account = account or "default"
-    return account_session_path(account)
+    return account_session_path(resolve_account(account))

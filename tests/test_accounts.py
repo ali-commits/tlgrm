@@ -20,6 +20,28 @@ def test_load_missing_config_returns_empty(tmp_home):
     assert cfg == {"default_account": None, "accounts": {}}
 
 
+def test_session_path_for_login_ignores_session_override(tmp_home, monkeypatch):
+    # During login (must_exist=False) the new session must land at the account's
+    # path, not at a --session override, so it matches where it gets registered.
+    monkeypatch.setenv("TG_SESSION_PATH", "/tmp/override")
+    path = accounts.session_path_for("work", must_exist=False)
+    assert path.endswith("/accounts/work.session")
+
+
+def test_session_path_for_normal_command_honors_override(tmp_home, monkeypatch):
+    monkeypatch.setenv("TG_SESSION_PATH", "/tmp/override")
+    assert accounts.session_path_for("work", must_exist=True) == "/tmp/override"
+
+
+def test_save_config_removes_temp_on_write_failure(tmp_home, monkeypatch):
+    import tomli_w
+    monkeypatch.setattr(tomli_w, "dump",
+                        lambda *a, **k: (_ for _ in ()).throw(ValueError("boom")))
+    with pytest.raises(ValueError):
+        accounts.save_config({"default_account": None, "accounts": {}})
+    assert not os.path.exists(accounts._config_path() + ".tmp")
+
+
 def test_save_then_load_roundtrip(tmp_home):
     accounts.save_config({"default_account": "work",
                           "accounts": {"work": {}, "personal": {}}})
