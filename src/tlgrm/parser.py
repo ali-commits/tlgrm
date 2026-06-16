@@ -2,11 +2,19 @@
 
 import argparse
 
+from . import __version__
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tlgrm",
         description="tlgrm - unofficial command-line client & webhook daemon for Telegram",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"tlgrm {__version__}",
+        help="Show the tlgrm version and exit",
     )
     parser.add_argument(
         "--session",

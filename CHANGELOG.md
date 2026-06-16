@@ -3,6 +3,12 @@
 All notable changes to tlgrm are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] — 2026-06-16
+
+### Added
+
+- **`tlgrm --version`** — print the installed version and exit.
+
 ## [0.3.0] — 2026-06-16
 
 ### Changed

@@ -123,3 +123,12 @@ def test_schedule_subcommands():
     assert a.schedule_command == "send" and a.in_ == "2h"
     a = parser.parse_args(["schedule", "cancel", "--target", "@x", "--id", "5", "6"])
     assert a.schedule_command == "cancel" and a.ids == [5, 6]
+
+
+def test_version_flag_exits_zero_and_prints(capsys):
+    parser = build_parser()
+    with pytest.raises(SystemExit) as exc:
+        parser.parse_args(["--version"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert out.startswith("tlgrm ")
