@@ -19,11 +19,15 @@ Drive your *personal* Telegram account from the terminal — or from an AI assis
 ## Features
 
 - **Personal account** — acts as *you* (MTProto user account, not a bot): read history, list members, message anyone you can.
-- **29 commands** — send/reply/edit/delete, history & global search, reactions, forwarding, pin & mute, group management, scheduling, polls.
+- **Multi-account** — log into several Telegram accounts, switch with `-a/--account`, and listen to all of them at once (like the mobile app).
+- **30+ commands** — send/reply/edit/delete, history & global search, reactions, forwarding, pin & mute, group management, scheduling, polls.
+- **Background server** — an optional persistent process owns one hot connection per account; the CLI, MCP server, and webhook listener all route through it, so they run together with no `database is locked` conflict (and commands are near-instant).
+- **Real-time webhooks** — forward incoming messages to an HTTP endpoint, per-account, optionally as a `systemd` service.
+- **Live filtering & permissions** — per-account allow/block lists for both *listening* (`filter listen`) and *writing* (`filter write`), plus daily listening windows — all reconfigurable live.
+- **Scheduled messages** — `schedule send --at/--in`, `list`, `cancel` (Telegram-native, fires even when offline).
+- **MCP server** — `tlgrm-mcp` lets AI assistants drive Telegram (read-only by default), as a thin bridge to the server.
+- **Speech-to-text** — auto-transcribe incoming voice notes (multilingual, GPU-aware, live-configurable via `tlgrm stt`), or transcribe any file with `tlgrm transcribe`.
 - **Clean JSON output** — commands print JSON to stdout (logs go to stderr), so it pipes straight into `jq` and scripts.
-- **Real-time webhooks + daemon** — forward incoming messages to an HTTP endpoint, optionally as a `systemd` background service.
-- **MCP server** — `tlgrm-mcp` lets AI assistants drive Telegram, read-only by default.
-- **Speech-to-text** — auto-transcribe incoming voice notes (multilingual, GPU-aware), or transcribe any file with `tlgrm transcribe`.
 
 ## Quick start
 

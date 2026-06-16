@@ -46,6 +46,9 @@ tlgrm server start      # start it in the background (detached)
 tlgrm server status     # {"running": true/false}
 tlgrm server stop
 tlgrm server restart
+tlgrm server install    # run it on boot as a systemd user service
+tlgrm server uninstall  # remove the service
+tlgrm server logs       # recent service logs
 ```
 
 When the server is running, **CLI commands automatically route through it** —
@@ -186,39 +189,27 @@ To change a setting later, edit `~/.tlgrm/daemon.env` and restart the service:
 systemctl --user restart tlgrm-daemon
 ```
 
-### Running the daemon, MCP server, and CLI at the same time
+### Running the MCP server, listener, and CLI at the same time
 
-A Telethon session is **single-process**: it's a SQLite file that one connection holds while running, and the underlying Telegram auth key must not be used by two live connections at once (Telegram would invalidate it). So if the daemon (`tlgrm listen`) or the MCP server (`tlgrm-mcp`) is running and you point a second process at the **same** session, you'll get `database is locked` — and, worse, risk an `AUTH_KEY_DUPLICATED` logout.
+A Telethon session is **single-process**: it's a SQLite file one connection holds, and the same auth key must not drive two live connections at once (Telegram would invalidate it). Historically this meant the MCP server, a listener, and the CLI couldn't share an account.
 
-The fix is the way Telegram itself works: an account can have **many** authorized sessions (one per "device"). Give **each long-running consumer its own session**. They then run simultaneously without conflict, all on the same account.
+**The [background server](#background-server) resolves this completely.** Start it once (`tlgrm server start`, or `tlgrm server install` for a systemd service) and it becomes the **single owner** of each account's connection. Every other consumer routes through it:
 
-Each session is a separate login. Set it up once per consumer:
+- The **CLI** auto-detects the server and routes commands through it (falling back to a direct connection only when no server runs).
+- **`tlgrm-mcp`** is a bridge to the server (and auto-spawns one if needed).
+- The **listener** runs *inside* the server (per account; configure with `tlgrm listening …` / `tlgrm webhook …`).
 
-```bash
-# 1. Your everyday CLI keeps the default session (~/.tlgrm/tg_session)
-tlgrm login
-
-# 2. A dedicated session for the MCP server
-tlgrm --session ~/.tlgrm/mcp.session login
-
-# 3. A dedicated session for the background daemon
-tlgrm --session ~/.tlgrm/daemon.session login
-```
-
-Then point each consumer at its session:
+So they all run at once on the same account with no `database is locked` and no `AUTH_KEY_DUPLICATED` — there is only ever one connection per account.
 
 ```bash
-# MCP server (e.g. in your MCP client config)
-tlgrm-mcp --session ~/.tlgrm/mcp.session --allow-write
-
-# Daemon — export the session before installing; it's captured into daemon.env
-export TG_SESSION_PATH=~/.tlgrm/daemon.session
-tlgrm daemon install --webhook-url https://example.com/webhook
+tlgrm login                 # default account
+tlgrm account add work      # more accounts as needed
+tlgrm server install        # run the server on boot (or: tlgrm server start)
+# now use the CLI, point your MCP client at tlgrm-mcp, and configure listening —
+# all routed through the one server.
 ```
 
-Now the daemon listens, the MCP server answers your assistant, and your CLI runs one-off commands — all at once, no locks. The `--session PATH` flag works on every `tlgrm` command and on `tlgrm-mcp`; it overrides `TG_SESSION_PATH` for that process. Each session shows up as a separate device under Telegram's *Settings → Devices*, where you can review or revoke them.
-
-> One-off alternative: if you don't want extra sessions, just stop the long-running consumer while you run a CLI command against the shared session.
+> `--session PATH` / `TG_SESSION_PATH` still exist as a low-level override but are **deprecated** in favor of named accounts + the server.
 
 ## Files and directories
 
