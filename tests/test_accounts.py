@@ -92,3 +92,17 @@ def test_resolve_account_uses_default_then_explicit(tmp_home):
 def test_resolve_account_none_configured_raises(tmp_home):
     with pytest.raises(accounts.TlgrmError):
         accounts.resolve_account()
+
+
+def test_migrate_legacy_session(tmp_home, monkeypatch):
+    legacy = tmp_home / "tg_session.session"
+    legacy.write_text("session-data")
+    monkeypatch.setattr(accounts, "_legacy_session_path", lambda: str(legacy))
+
+    assert accounts.migrate_legacy_session() is True
+    cfg = accounts.load_config()
+    assert cfg["default_account"] == "default"
+    assert os.path.exists(accounts.account_session_path("default"))
+    assert not legacy.exists()
+    # Idempotent: second call is a no-op.
+    assert accounts.migrate_legacy_session() is False

@@ -120,6 +120,26 @@ def resolve_account(name=None):
     return chosen
 
 
+def _legacy_session_path():
+    return os.path.expanduser("~/.tlgrm/tg_session.session")
+
+
+def migrate_legacy_session():
+    """Move a pre-0.3.0 single session to account 'default'. Returns True if it
+    migrated, False if there was nothing to do."""
+    legacy = _legacy_session_path()
+    cfg = load_config()
+    if not os.path.exists(legacy) or "default" in cfg["accounts"]:
+        return False
+    os.makedirs(_accounts_dir(), mode=0o700, exist_ok=True)
+    os.replace(legacy, account_session_path("default"))
+    cfg["accounts"].setdefault("default", {})
+    if not cfg.get("default_account"):
+        cfg["default_account"] = "default"
+    save_config(cfg)
+    return True
+
+
 def session_path_for(account=None, must_exist=True):
     """Resolve the session base path for a command.
 
