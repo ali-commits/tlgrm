@@ -14,22 +14,50 @@ def _parse_when(value):
     return datetime.datetime.fromisoformat(value)
 
 
-async def _login():
-    client = get_client()
-    print("Connecting to Telegram and starting interactive authorization...")
+async def _login(name=None):
+    from . import accounts
+    account = name or "default"
+    client = get_client(account=account, must_exist=False)
+    print(f"Connecting to Telegram to log in account '{account}'...")
     await client.start()
     me = await client.get_me()
-    print(f"\nSuccessfully logged in as: {me.first_name} "
+    accounts.add_account(account)  # register on success
+    print(f"\nLogged in account '{account}' as: {me.first_name} "
           f"(@{me.username or 'No Username'}) [ID: {me.id}]")
     await client.disconnect()
 
 
+def run_account_command(args):
+    """Handle `tlgrm account <list|use|rename|remove>` (sync, no Telegram I/O)."""
+    from . import accounts
+    cmd = args.account_command
+    if cmd == "list":
+        cfg = accounts.load_config()
+        default = cfg.get("default_account")
+        emit({"success": True, "default": default,
+              "accounts": [{"name": n, "default": n == default}
+                           for n in cfg["accounts"]]})
+    elif cmd == "use":
+        accounts.set_default(args.name)
+        emit({"success": True, "default": args.name})
+    elif cmd == "rename":
+        accounts.rename_account(args.old, args.new)
+        emit({"success": True, "renamed": [args.old, args.new]})
+    elif cmd == "remove":
+        accounts.remove_account(args.name)
+        emit({"success": True, "removed": args.name})
+
+
 async def run_command(args):
     """Run an authenticated command and emit its result."""
+    account = getattr(args, "account", None)
     if args.command == "login":
-        await _login()
+        await _login(account)
         return
-    async with open_client() as client:
+    if args.command == "account" and args.account_command == "add":
+        await _login(args.name)
+        return
+    async with open_client(account) as client:
         if args.command == "chats":
             emit(await chats.list_chats(client, args.limit))
         elif args.command == "send":

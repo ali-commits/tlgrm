@@ -38,6 +38,9 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
 
+    from .accounts import migrate_legacy_session
+    migrate_legacy_session()
+
     # A --session flag points this process at its own Telethon session (resolved
     # at client-build time via config.session_path), so it never collides with a
     # running daemon/MCP server on the single-process SQLite session.
@@ -72,6 +75,9 @@ def main():
                 daemon_status()
             elif args.daemon_command == "logs":
                 daemon_logs()
+        elif args.command == "account" and args.account_command != "add":
+            from .dispatch import run_account_command
+            run_account_command(args)
         else:
             asyncio.run(run_command(args))
     except KeyboardInterrupt:
