@@ -159,3 +159,78 @@ def session_path_for(account=None, must_exist=True):
     if override:
         return override
     return account_session_path(resolve_account(account))
+
+
+def _account(cfg, name):
+    if name not in cfg["accounts"]:
+        raise TlgrmError(f"No such account: {name!r}. See 'tlgrm account list'.")
+    return cfg["accounts"][name]
+
+
+def listen_config(name):
+    """Normalized per-account listen settings (with defaults applied)."""
+    acc = _account(load_config(), name)
+    flt = (acc.get("filter") or {}).get("listen") or {}
+    return {
+        "enabled": bool(acc.get("listen_enabled", False)),
+        "webhook_url": acc.get("webhook_url"),
+        "webhook_headers": list(acc.get("webhook_headers", [])),
+        "filter": {"mode": flt.get("mode", "block"), "list": list(flt.get("list", []))},
+    }
+
+
+def set_listen_enabled(name, enabled):
+    cfg = load_config()
+    _account(cfg, name)["listen_enabled"] = bool(enabled)
+    save_config(cfg)
+
+
+def set_webhook(name, url, headers=None):
+    cfg = load_config()
+    acc = _account(cfg, name)
+    acc["webhook_url"] = url
+    acc["webhook_headers"] = list(headers or [])
+    save_config(cfg)
+
+
+def clear_webhook(name):
+    cfg = load_config()
+    acc = _account(cfg, name)
+    acc.pop("webhook_url", None)
+    acc.pop("webhook_headers", None)
+    save_config(cfg)
+
+
+def _filter_node(acc, domain):
+    return acc.setdefault("filter", {}).setdefault(domain, {})
+
+
+def filter_set_mode(name, domain, mode):
+    if mode not in ("allow", "block"):
+        raise TlgrmError(f"Filter mode must be 'allow' or 'block', got {mode!r}.")
+    cfg = load_config()
+    _filter_node(_account(cfg, name), domain)["mode"] = mode
+    save_config(cfg)
+
+
+def filter_add(name, domain, tokens):
+    cfg = load_config()
+    node = _filter_node(_account(cfg, name), domain)
+    lst = node.setdefault("list", [])
+    for t in tokens:
+        if t and t not in lst:
+            lst.append(t)
+    save_config(cfg)
+
+
+def filter_remove(name, domain, tokens):
+    cfg = load_config()
+    node = _filter_node(_account(cfg, name), domain)
+    node["list"] = [x for x in node.get("list", []) if x not in set(tokens)]
+    save_config(cfg)
+
+
+def filter_clear(name, domain):
+    cfg = load_config()
+    _filter_node(_account(cfg, name), domain)["list"] = []
+    save_config(cfg)
