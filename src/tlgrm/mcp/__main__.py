@@ -15,16 +15,10 @@ def main():
     parser.add_argument("--allow-destructive", action="store_true",
                         help="Expose destructive tools (delete, leave, remove-members).")
     parser.add_argument("--session", metavar="PATH",
-                        help="Use a dedicated Telethon session for this server "
-                             "(its own login). Give the daemon and the MCP server "
-                             "separate sessions so they can run at the same time.")
+                        help="(Ignored — the bridge delegates to the tlgrm server.)")
+    parser.add_argument("--account",
+                        help="Account the bridge acts as (default: the server's default account).")
     args = parser.parse_args()
-
-    # Set the session path before importing the server (which reads config), so
-    # the MCP server uses its own session and never fights the CLI/daemon for the
-    # single-process Telethon SQLite session.
-    if args.session:
-        os.environ["TG_SESSION_PATH"] = os.path.expanduser(args.session)
 
     try:
         from .server import build_server
@@ -34,7 +28,7 @@ def main():
             "  pip install 'tlgrm[mcp]'\n")
         sys.exit(1)
 
-    server = build_server(args.allow_write, args.allow_destructive)
+    server = build_server(args.allow_write, args.allow_destructive, account=args.account)
     server.run()
 
 

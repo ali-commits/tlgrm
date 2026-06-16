@@ -2,6 +2,7 @@
 
 import os
 import sys
+import shutil
 import signal
 import subprocess
 
@@ -11,8 +12,12 @@ from .server.app import pid_path, socket_path, serve_forever
 
 
 def _spawn_detached():
-    """Launch `tlgrm server start --foreground` in its own session."""
-    exe = sys.argv[0]
+    """Launch `tlgrm server start --foreground` in its own session. Resolve the
+    `tlgrm` executable (sys.argv[0] may be `tlgrm-mcp` when called from the bridge)."""
+    exe = shutil.which("tlgrm")
+    if not exe:
+        cand = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "tlgrm")
+        exe = cand if os.path.exists(cand) else sys.argv[0]
     subprocess.Popen([exe, "server", "start", "--foreground"],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      start_new_session=True)
