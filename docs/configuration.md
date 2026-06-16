@@ -293,6 +293,27 @@ export TG_STT_COMPUTE=float32   # override compute type (default: int8/float16)
 
 The daemon pre-warms the STT model at startup so the first voice note transcribes without delay.
 
+### Live STT control (`tlgrm stt`)
+
+STT is a **server-global** resource (one shared, hot model set). Configure it
+live — no restart — with the `stt` commands:
+
+```bash
+tlgrm stt status                         # backend, model, device, enabled?
+tlgrm stt set --model large-v3-turbo     # change model (Arabic/multilingual)
+tlgrm stt set --device cuda              # force GPU (or cpu/auto)
+tlgrm stt set --backend faster-whisper
+tlgrm stt disable                        # stop auto-transcribing incoming voice
+tlgrm stt enable
+```
+
+When the server is running, a change drops its cached models so the next
+transcription reloads with the new settings; the server also **pre-warms** the
+model at startup so the first voice note isn't delayed. `stt disable` only turns
+off automatic transcription of *incoming* messages — the `tlgrm transcribe`
+command below always works. Settings persist in the `[stt]` section of
+`~/.tlgrm/config.toml`.
+
 ### Standalone transcription
 
 `tlgrm transcribe` does not require a Telegram login:

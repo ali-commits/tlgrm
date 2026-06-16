@@ -27,6 +27,11 @@ All notable changes to tlgrm are documented here. This project adheres to
   Blocked targets make outgoing commands (send, reply, edit, forward, react, pin,
   schedule, poll) fail fast — before anything is sent. Combined with `filter
   listen`, this forms a full per-contact listen×write permission matrix.
+- **Live STT control (`tlgrm stt`).** Configure speech-to-text without a restart:
+  `tlgrm stt status/enable/disable/set --backend/--model/--device`. Settings are
+  server-global and applied live (the server drops cached models and re-warms);
+  `disable` stops auto-transcribing incoming voice notes. The server pre-warms the
+  model at startup.
 
 ## [0.2.1] — 2026-06-16
 
