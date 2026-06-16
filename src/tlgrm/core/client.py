@@ -4,20 +4,22 @@ from contextlib import asynccontextmanager
 
 from telethon import TelegramClient
 
-from ..config import get_api_credentials, ensure_dirs, session_path
+from ..config import get_api_credentials, ensure_dirs
 from .errors import NotAuthorizedError
 
 
-def get_client():
-    """Build a TelegramClient using the configured session and credentials.
+def get_client(account=None, must_exist=True):
+    """Build a TelegramClient for the given account (or the default).
 
-    The session path is resolved at call time (config.session_path), so a
-    `--session` flag or TG_SESSION_PATH set just before this call is honored.
-    Raises CredentialsError (from get_api_credentials) if creds are unset.
+    The session path is resolved at call time from the account registry; a
+    TG_SESSION_PATH / --session override still wins. `must_exist=False` is used
+    during login, when the account is not registered yet.
+    Raises CredentialsError if creds are unset.
     """
+    from ..accounts import session_path_for
     ensure_dirs()
     api_id, api_hash = get_api_credentials()
-    return TelegramClient(session_path(), api_id, api_hash)
+    return TelegramClient(session_path_for(account, must_exist), api_id, api_hash)
 
 
 def resolve_target(target):
@@ -36,9 +38,9 @@ async def ensure_authorized(client):
 
 
 @asynccontextmanager
-async def open_client():
+async def open_client(account=None):
     """Yield a connected, authorized client and always disconnect afterwards."""
-    client = get_client()
+    client = get_client(account)
     try:
         await ensure_authorized(client)
         yield client

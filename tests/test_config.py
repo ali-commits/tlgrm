@@ -75,3 +75,24 @@ def test_get_client_uses_resolved_session(monkeypatch):
 
     client.get_client()
     assert captured["session"] == "/tmp/sessions/daemon"
+
+
+def test_get_client_uses_account_session(monkeypatch, tmp_path):
+    from tlgrm.core import client
+    from tlgrm import accounts
+
+    captured = {}
+
+    class _FakeClient:
+        def __init__(self, session, api_id, api_hash):
+            captured["session"] = session
+
+    monkeypatch.setattr(client, "TelegramClient", _FakeClient)
+    monkeypatch.setattr(client, "ensure_dirs", lambda: None)
+    monkeypatch.setattr(client, "get_api_credentials", lambda: (1, "h"))
+    monkeypatch.delenv("TG_SESSION_PATH", raising=False)
+    monkeypatch.setattr(accounts, "_accounts_dir", lambda: str(tmp_path / "acc"))
+    monkeypatch.setattr(accounts, "resolve_account", lambda name=None: "work")
+
+    client.get_client()
+    assert captured["session"].endswith("/acc/work.session")
