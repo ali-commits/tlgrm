@@ -61,6 +61,35 @@ connection per account. With the server running you no longer need per-consumer
 session and need interactive input); everything else routes through the server
 when it's up.
 
+### Per-account listening (live)
+
+With the server running, each account listens for incoming messages
+independently, driven by **persisted, live-reconfigurable** config — every
+command below takes effect immediately (no restart) and also persists:
+
+```bash
+tlgrm -a work listening enable          # start listening on this account
+tlgrm -a work webhook set https://example.com/work --header "Authorization: Bearer X"
+tlgrm -a work webhook show
+tlgrm -a work filter listen mode allow  # allow = whitelist; block = blacklist
+tlgrm -a work filter listen add @boss @work_group
+tlgrm -a work filter listen remove @work_group
+tlgrm -a work filter listen show
+tlgrm -a work listening disable
+```
+
+A `filter listen` target is an `@username`, id, or phone, matched by the
+message's **chat or sender**. `mode allow` forwards only matching messages;
+`mode block` forwards everything except matches. Each account can point at its
+own webhook, so you can route `work` and `personal` to different endpoints.
+
+The webhook payload now includes an **`account`** object (`{"name", "id"}`)
+identifying which account received the message — so a downstream knows where it
+came from and which account to reply through.
+
+> If no server is running, these commands still update the stored config; it
+> takes effect when you next `tlgrm server start`.
+
 ## Setting variables
 
 ### Temporarily (current shell only)

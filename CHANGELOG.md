@@ -16,6 +16,12 @@ All notable changes to tlgrm are documented here. This project adheres to
   socket. CLI commands automatically route through it when it's running (fast,
   no per-command login) and fall back to a direct connection when it isn't —
   which structurally eliminates the "database is locked" session conflict.
+- **Server-side per-account listening with live config.** With the server
+  running, each account listens for incoming messages independently. Configure
+  it live (no restart): `tlgrm listening enable/disable`, `tlgrm webhook
+  set/show/clear`, and `tlgrm filter listen show/mode/add/remove/clear` (an
+  allow/block list matched by chat or sender). The webhook payload now includes
+  an `account` field identifying which account received the message.
 
 ## [0.2.1] — 2026-06-16
 

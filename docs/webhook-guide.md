@@ -147,6 +147,10 @@ Each webhook POST sends a JSON body with this structure:
 {
   "event": "new_message",
   "timestamp": "2026-06-14T06:12:00.123456+00:00",
+  "account": {
+    "name": "work",
+    "id": 31193026
+  },
   "message": {
     "id": 137475,
     "text": "Check this out!",
@@ -182,6 +186,7 @@ Each webhook POST sends a JSON body with this structure:
 |-------|------|-------|
 | `event` | string | Always `"new_message"` |
 | `timestamp` | string | UTC ISO-8601 time the event was processed |
+| `account` | object | `{name, id}` of the tlgrm account that received the message (present when listening via the server) |
 | `message.id` | int | Telegram message ID |
 | `message.text` | string | Message text (empty string for media-only messages) |
 | `message.date` | string | ISO-8601 send time |
