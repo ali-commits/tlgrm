@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="https://raw.githubusercontent.com/ali-commits/tlgrm/main/assets/logo.png" alt="tlgrm logo" width="160" height="160">
+
 # tlgrm
 
 **An unofficial, feature-rich command-line client, MCP server, and webhook daemon for Telegram, built on [Telethon](https://github.com/LonamiWebs/Telethon).**
