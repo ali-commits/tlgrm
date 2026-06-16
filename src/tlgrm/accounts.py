@@ -167,15 +167,21 @@ def _account(cfg, name):
     return cfg["accounts"][name]
 
 
+def filter_config(name, domain):
+    """Normalized {mode, list} for a filter domain ('listen' or 'write')."""
+    acc = _account(load_config(), name)
+    flt = (acc.get("filter") or {}).get(domain) or {}
+    return {"mode": flt.get("mode", "block"), "list": list(flt.get("list", []))}
+
+
 def listen_config(name):
     """Normalized per-account listen settings (with defaults applied)."""
     acc = _account(load_config(), name)
-    flt = (acc.get("filter") or {}).get("listen") or {}
     return {
         "enabled": bool(acc.get("listen_enabled", False)),
         "webhook_url": acc.get("webhook_url"),
         "webhook_headers": list(acc.get("webhook_headers", [])),
-        "filter": {"mode": flt.get("mode", "block"), "list": list(flt.get("list", []))},
+        "filter": filter_config(name, "listen"),
     }
 
 

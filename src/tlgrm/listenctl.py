@@ -42,7 +42,7 @@ def webhook_show(account):
 def filter_cmd(account, domain, op, value=None, tokens=None):
     if op == "show":
         emit({"success": True, "account": account, "domain": domain,
-              "filter": accounts.listen_config(account)["filter"]})
+              "filter": accounts.filter_config(account, domain)})
         return
     if op == "mode":
         accounts.filter_set_mode(account, domain, value)
@@ -54,4 +54,4 @@ def filter_cmd(account, domain, op, value=None, tokens=None):
         accounts.filter_clear(account, domain)
     _push_reload(account)
     emit({"success": True, "account": account, "domain": domain,
-          "filter": accounts.listen_config(account)["filter"]})
+          "filter": accounts.filter_config(account, domain)})
