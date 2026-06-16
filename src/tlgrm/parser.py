@@ -180,6 +180,15 @@ def build_parser():
     dsub.add_parser("status", help="Show daemon systemd status")
     dsub.add_parser("logs", help="Show recent daemon logs")
 
+    sp = sub.add_parser("server", help="Manage the background tlgrm server")
+    spsub = sp.add_subparsers(dest="server_command", required=True)
+    spstart = spsub.add_parser("start", help="Start the server")
+    spstart.add_argument("--foreground", action="store_true",
+                         help="Run in the foreground instead of detaching")
+    spsub.add_parser("stop", help="Stop the server")
+    spsub.add_parser("status", help="Show server status")
+    spsub.add_parser("restart", help="Restart the server")
+
     p = sub.add_parser("transcribe", help="Transcribe an audio file (speech-to-text)")
     p.add_argument("--file", required=True, help="Path to the audio file")
     p.add_argument("--backend", help="Override the STT backend (faster-whisper, whisper, "

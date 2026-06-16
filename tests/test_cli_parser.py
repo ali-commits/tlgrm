@@ -37,7 +37,8 @@ def test_session_flag_sets_env(monkeypatch):
     monkeypatch.setenv("TG_API_HASH", "h")
     monkeypatch.delenv("TG_SESSION_PATH", raising=False)
     monkeypatch.setattr(sys, "argv", ["tlgrm", "--session", "~/mcp_sess", "chats"])
-    monkeypatch.setattr(cli, "run_command", lambda args: None)
+    from tlgrm import dispatch
+    monkeypatch.setattr(dispatch, "run_command_routed", lambda args: None)
     monkeypatch.setattr(cli.asyncio, "run", lambda coro: coro)
     cli.main()
     import os

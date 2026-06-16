@@ -2,7 +2,6 @@ import sys
 import asyncio
 
 from .parser import build_parser
-from .dispatch import run_command
 from .output import emit
 from .core.errors import TlgrmError, CredentialsError, NotAuthorizedError
 from .webhooks import run_listener
@@ -75,6 +74,16 @@ def main():
                 daemon_status()
             elif args.daemon_command == "logs":
                 daemon_logs()
+        elif args.command == "server":
+            from . import serverctl
+            if args.server_command == "start":
+                serverctl.start(args.foreground)
+            elif args.server_command == "stop":
+                serverctl.stop()
+            elif args.server_command == "status":
+                serverctl.status()
+            elif args.server_command == "restart":
+                serverctl.restart()
         elif args.command == "account" and args.account_command != "add":
             from .dispatch import run_account_command
             run_account_command(args)
