@@ -5,6 +5,15 @@ All notable changes to tlgrm are documented here. This project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- **The MCP server (`tlgrm-mcp`) is now a thin bridge to the `tlgrm server`.**
+  Tool calls route through the single owned connection (the server enforces
+  permission tiers and the write guard), and a server is auto-spawned if none is
+  running. Adds `--account`; `--session` is no longer needed (accepted but
+  ignored). The MCP server, the webhook daemon, and the CLI can now all run at
+  once without the `database is locked` conflict.
+
 ### Added
 
 - **Multi-account support.** Log into multiple Telegram accounts, each a named

@@ -770,7 +770,7 @@ Stops, disables, and removes the service and its unit file.
 
 The `tlgrm-mcp` stdio MCP server exposes Telegram operations as tools to any MCP-compatible AI assistant. Requires `pip install "tlgrm[mcp]"` and a prior `tlgrm login`. See [../README.md#mcp-server](../README.md#mcp-server) for client configuration.
 
-> Pass `--session PATH` to give the server its own Telethon session (log it in with `tlgrm --session PATH login`). Do this if you also run the webhook daemon or CLI against the same account, so they don't lock each other out — see [running them concurrently](configuration.md#running-the-daemon-mcp-server-and-cli-at-the-same-time).
+> `tlgrm-mcp` is a **bridge** to the [background server](configuration.md#background-server): tool calls route through the one owned connection (which enforces tiers and the write guard), and a server is auto-spawned if none is running — so running the MCP server, the daemon, and the CLI together is safe (one connection, no `database is locked`). Pass `--account NAME` to act as a specific account.
 
 ### Read-only tier (default — no flags needed)
 

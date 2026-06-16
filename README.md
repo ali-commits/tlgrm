@@ -135,14 +135,14 @@ tlgrm ships a **stdio MCP server** (`tlgrm-mcp`). It is **read-only by default**
   "mcpServers": {
     "tlgrm": {
       "command": "uvx",
-      "args": ["--from", "tlgrm[mcp]", "tlgrm-mcp", "--session", "~/.tlgrm/mcp.session"],
+      "args": ["--from", "tlgrm[mcp]", "tlgrm-mcp", "--allow-write"],
       "env": { "TG_API_ID": "...", "TG_API_HASH": "..." }
     }
   }
 }
 ```
 
-A Telethon session is single-process, so give the MCP server its **own** session with `--session` (log it in once: `tlgrm --session ~/.tlgrm/mcp.session login`). That lets the MCP server, the webhook daemon, and your CLI all run at the same time without locking each other out — see [running them concurrently](docs/configuration.md#running-the-daemon-mcp-server-and-cli-at-the-same-time). Omit `--session` and it shares the default CLI session (fine if nothing else is running).
+The MCP server is a **thin bridge** to the [background server](docs/configuration.md#background-server): every tool call routes through the one owned connection (which enforces the permission tier and the write guard), and a server is **auto-spawned** if none is running. So the MCP server, the webhook daemon, and your CLI all run at once with no `database is locked` conflict — no `--session` juggling. Add `--account NAME` to act as a specific [account](docs/configuration.md#accounts-multi-login) (otherwise the server's default account is used). Requires a prior `tlgrm login`.
 
 ---
 
