@@ -22,6 +22,11 @@ All notable changes to tlgrm are documented here. This project adheres to
   set/show/clear`, and `tlgrm filter listen show/mode/add/remove/clear` (an
   allow/block list matched by chat or sender). The webhook payload now includes
   an `account` field identifying which account received the message.
+- **Per-account write guard (`filter write`).** Restrict which chats/users an
+  account may message: `tlgrm filter write mode allow|block` + `add/remove/clear`.
+  Blocked targets make outgoing commands (send, reply, edit, forward, react, pin,
+  schedule, poll) fail fast — before anything is sent. Combined with `filter
+  listen`, this forms a full per-contact listen×write permission matrix.
 
 ## [0.2.1] — 2026-06-16
 

@@ -90,6 +90,32 @@ came from and which account to reply through.
 > If no server is running, these commands still update the stored config; it
 > takes effect when you next `tlgrm server start`.
 
+### Write guard (who an account may message)
+
+The companion to the listen filter: a per-account **write filter** restricts
+which chats/users an account is allowed to *send to*. A blocked target makes
+outgoing commands (`send`, `reply`, `edit`, `forward`, `react`, `pin`,
+`schedule`, `poll`) fail with a permission error **before anything is sent** —
+a useful safety rail for the AI/MCP path.
+
+```bash
+tlgrm -a work filter write mode allow   # allow = only these may be messaged
+tlgrm -a work filter write add @client_a @client_b
+tlgrm -a work filter write show
+# block mode (the default) instead blocks only the listed targets:
+tlgrm -a work filter write mode block
+tlgrm -a work filter write add @do_not_message
+```
+
+`mode block` (default) with an empty list means you can message anyone;
+`mode allow` with a list means *only* those targets are allowed. The guard
+applies in both direct and server mode and is read fresh per command, so changes
+take effect immediately.
+
+Together, `filter listen` and `filter write` give a full per-contact
+**listen × write** permission matrix — listen to someone but never reply, reply
+but never listen, both, or neither.
+
 ## Setting variables
 
 ### Temporarily (current shell only)
