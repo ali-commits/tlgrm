@@ -54,3 +54,25 @@ def test_missing_credentials_exits_1_with_json(monkeypatch, capsys):
         cli.main()
     assert exc.value.code == 1
     assert '"success": false' in capsys.readouterr().out
+
+
+def test_global_account_flag():
+    parser = build_parser()
+    args = parser.parse_args(["-a", "work", "chats"])
+    assert args.account == "work"
+    assert args.command == "chats"
+
+
+def test_account_subcommands_present():
+    parser = build_parser()
+    sub = next(a for a in parser._actions if a.dest == "command")
+    assert "account" in sub.choices
+    args = parser.parse_args(["account", "add", "personal"])
+    assert args.account_command == "add"
+    assert args.name == "personal"
+
+
+def test_account_add_name_optional():
+    parser = build_parser()
+    args = parser.parse_args(["account", "add"])
+    assert args.name is None

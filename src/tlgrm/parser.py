@@ -12,9 +12,27 @@ def build_parser():
         help="Telethon session base path to use for this command (overrides "
              "TG_SESSION_PATH). Use a separate session per long-running consumer "
              "so the CLI, daemon, and MCP server don't share one and lock each other out.")
+    parser.add_argument(
+        "-a", "--account", metavar="NAME",
+        help="Account to act as (defaults to the configured default account). "
+             "Manage accounts with `tlgrm account`.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("login", help="Interactively log in to Telegram")
+
+    ap = sub.add_parser("account", help="Manage Telegram accounts (multi-login)")
+    asub = ap.add_subparsers(dest="account_command", required=True)
+    aadd = asub.add_parser("add", help="Log in a new account")
+    aadd.add_argument("name", nargs="?", default=None,
+                      help="Account name (default: 'default')")
+    asub.add_parser("list", help="List accounts and the default")
+    ause = asub.add_parser("use", help="Set the default account")
+    ause.add_argument("name")
+    aren = asub.add_parser("rename", help="Rename an account")
+    aren.add_argument("old")
+    aren.add_argument("new")
+    arem = asub.add_parser("remove", help="Log out and delete an account")
+    arem.add_argument("name")
 
     p = sub.add_parser("chats", help="List recent chats/dialogs")
     p.add_argument("--limit", type=int, default=20, help="Max chats (default: 20)")
