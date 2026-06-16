@@ -5,11 +5,17 @@ from tlgrm.core import messages
 
 async def test_forward_returns_new_ids():
     client = AsyncMock()
-    client.forward_messages = AsyncMock(return_value=[SimpleNamespace(id=11), SimpleNamespace(id=12)])
+    client.forward_messages = AsyncMock(
+        return_value=[SimpleNamespace(id=11), SimpleNamespace(id=12)]
+    )
     out = await messages.forward(client, "src", "dst", ["1", "2"])
     client.forward_messages.assert_awaited_once_with("dst", [1, 2], "src")
-    assert out == {"forwarded_ids": [1, 2], "from": "src", "to": "dst",
-                   "new_message_ids": [11, 12]}
+    assert out == {
+        "forwarded_ids": [1, 2],
+        "from": "src",
+        "to": "dst",
+        "new_message_ids": [11, 12],
+    }
 
 
 async def test_react_sends_reaction_request():

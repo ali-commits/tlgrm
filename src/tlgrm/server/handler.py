@@ -1,22 +1,27 @@
 """Turn one decoded request into a response dict: tier check, run the command
 against the account's hot client, map exceptions to error responses."""
 
+import argparse
+from typing import Any, cast
+
 from ..execute import execute
 from .protocol import ok, err
 from .tiers import is_allowed
 
 
-class _Args:
+class _Args(argparse.Namespace):
     """Namespace whose unset attributes read as None, so a client may send only
-    the fields a command needs (the rest default to None)."""
-    def __init__(self, **kw):
-        self.__dict__.update(kw)
+    the fields a command needs (the rest default to None). Subclasses
+    argparse.Namespace so it is interchangeable with parsed CLI args."""
 
-    def __getattr__(self, name):
+    def __init__(self, **kw: Any) -> None:
+        super().__init__(**kw)
+
+    def __getattr__(self, name: str) -> Any:
         return None
 
 
-async def handle_request(manager, req):
+async def handle_request(manager: Any, req: dict[str, Any]) -> dict[str, Any]:
     rid = req.get("id")
     cmd = req.get("cmd")
     if cmd == "ping":
@@ -30,15 +35,16 @@ async def handle_request(manager, req):
         if not is_allowed(req.get("tier", "read"), "stt_reload"):
             return err(rid, "PermissionError", "'stt_reload' requires a higher tier")
         from .. import stt
+
         stt.reset_models()
         return ok(rid, {"stt_reloaded": True})
     if cmd == "stt_status":
         from ..stt import local
+
         loaded = ["/".join(str(p) for p in k) for k in sorted(local._models)]
         return ok(rid, {"loaded": loaded})
-    if not is_allowed(req.get("tier", "read"), cmd):
-        return err(rid, "PermissionError",
-                   f"'{cmd}' requires a higher permission tier")
+    if not is_allowed(req.get("tier", "read"), cast(str, cmd)):
+        return err(rid, "PermissionError", f"'{cmd}' requires a higher permission tier")
     try:
         client = await manager.get(req.get("account"))
         args = _Args(command=cmd, **(req.get("args") or {}))

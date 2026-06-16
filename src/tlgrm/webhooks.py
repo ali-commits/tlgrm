@@ -1,7 +1,8 @@
 import sys
 import logging
+from typing import Any
 
-from telethon import events, utils
+from telethon import events
 
 from .core.client import get_client, ensure_authorized
 from .core.errors import NotAuthorizedError
@@ -9,14 +10,21 @@ from .stt import preload
 from . import listen_core
 from . import accounts
 
-logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s [%(levelname)s] %(message)s",
-                    handlers=[logging.StreamHandler(sys.stderr)])
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stderr)],
+)
 logger = logging.getLogger("tlgrm-webhook")
 
 
-async def run_listener(webhook_url=None, webhook_headers=None, verbose=False,
-                       only=None, ignore=None):
+async def run_listener(
+    webhook_url: str | None = None,
+    webhook_headers: list[str] | None = None,
+    verbose: bool = False,
+    only: list[str] | None = None,
+    ignore: list[str] | None = None,
+) -> None:
     if verbose:
         logger.setLevel(logging.DEBUG)
     client = get_client()
@@ -28,9 +36,11 @@ async def run_listener(webhook_url=None, webhook_headers=None, verbose=False,
         return
 
     only_ids, only_names = await listen_core._resolve_filters(
-        client, listen_core._split_tokens(only))
+        client, listen_core._split_tokens(only)
+    )
     ignore_ids, ignore_names = await listen_core._resolve_filters(
-        client, listen_core._split_tokens(ignore))
+        client, listen_core._split_tokens(ignore)
+    )
 
     state = listen_core.ListenState()
     state.webhook_url = webhook_url
@@ -38,25 +48,30 @@ async def run_listener(webhook_url=None, webhook_headers=None, verbose=False,
 
     preload()
     me = await client.get_me()
-    account = {"name": accounts.load_config().get("default_account") or "default",
-               "id": me.id}
-    pending = set()
+    account: dict[str, Any] = {
+        "name": accounts.load_config().get("default_account") or "default",
+        "id": me.id,
+    }
+    pending: set[Any] = set()
 
-    @client.on(events.NewMessage(incoming=True))
-    async def handler(event):
+    @client.on(events.NewMessage(incoming=True))  # type: ignore[untyped-decorator]
+    async def handler(event: Any) -> None:
         try:
             chat = await event.get_chat()
             sender = await event.get_sender()
             cu = getattr(chat, "username", None)
             su = getattr(sender, "username", None)
             if (only_ids or only_names) and not listen_core._matches(
-                    only_ids, only_names, event.chat_id, event.sender_id, cu, su):
+                only_ids, only_names, event.chat_id, event.sender_id, cu, su
+            ):
                 return
-            if listen_core._matches(ignore_ids, ignore_names,
-                                    event.chat_id, event.sender_id, cu, su):
+            if listen_core._matches(
+                ignore_ids, ignore_names, event.chat_id, event.sender_id, cu, su
+            ):
                 return
-            await listen_core.process_event(event, state, account=account,
-                                            pending=pending, emit_console=verbose)
+            await listen_core.process_event(
+                event, state, account=account, pending=pending, emit_console=verbose
+            )
         except Exception as e:
             logger.error(f"Error in message handler: {e}")
 

@@ -2,30 +2,42 @@
 against the account's `write` filter and raise PermissionError if blocked. The
 target is matched as written (normalized @name/id) — no network resolution."""
 
+import argparse
+
 from . import accounts
 
 # Commands that send/post to a target, and which arg holds that target.
 _WRITE_TARGET = {
-    "send": "target", "reply": "target", "edit": "target", "react": "target",
-    "pin": "target", "poll": "target",
+    "send": "target",
+    "reply": "target",
+    "edit": "target",
+    "react": "target",
+    "pin": "target",
+    "poll": "target",
     "forward": "to_chat",
 }
 
 
-def write_target(cmd, args):
+def write_target(cmd: str, args: argparse.Namespace) -> str | None:
     """The target a write command acts on, or None if the command isn't a
     guarded write (e.g. reads, or `saved` which always goes to yourself)."""
     if cmd == "schedule":
-        return getattr(args, "target", None) if getattr(args, "schedule_command", None) == "send" else None
+        target: str | None = (
+            getattr(args, "target", None)
+            if getattr(args, "schedule_command", None) == "send"
+            else None
+        )
+        return target
     field = _WRITE_TARGET.get(cmd)
-    return getattr(args, field, None) if field else None
+    result: str | None = getattr(args, field, None) if field else None
+    return result
 
 
-def _norm(token):
+def _norm(token: str) -> str:
     return str(token).lstrip("@").lower()
 
 
-def check_write(account, cmd, args):
+def check_write(account: str | None, cmd: str, args: argparse.Namespace) -> None:
     """Raise PermissionError if the account's write filter blocks this target."""
     target = write_target(cmd, args)
     if target is None:
@@ -40,4 +52,5 @@ def check_write(account, cmd, args):
     if blocked:
         raise PermissionError(
             f"Writing to {target!r} is blocked by account '{name}'s write filter "
-            f"(mode={flt['mode']}).")
+            f"(mode={flt['mode']})."
+        )

@@ -3,6 +3,7 @@ backend and dispatches; returns None (logged) on any failure or missing
 dependency, so transcription is always best-effort and optional."""
 
 import logging
+from collections.abc import Callable
 
 from .settings import resolve_backend, resolve_model
 from . import local, cloud
@@ -10,11 +11,11 @@ from . import local, cloud
 logger = logging.getLogger("tlgrm-stt")
 
 # Local backends are the multilingual whisper family (handle Arabic, English, etc.).
-_LOCAL = {
+_LOCAL: dict[str, Callable[[str, str | None], str | None]] = {
     "faster-whisper": local.faster_whisper_transcribe,
     "whisper": local.whisper_transcribe,
 }
-_CLOUD = {
+_CLOUD: dict[str, Callable[[str, str | None], str | None]] = {
     "openai": cloud.openai_transcribe,
     "groq": cloud.groq_transcribe,
     "deepgram": cloud.deepgram_transcribe,
@@ -23,7 +24,9 @@ _CLOUD = {
 }
 
 
-def transcribe_audio(file_path, backend=None, model=None):
+def transcribe_audio(
+    file_path: str, backend: str | None = None, model: str | None = None
+) -> str | None:
     """Transcribe an audio file; None on failure.
 
     `backend`/`model` override the configured selection (useful for the
@@ -44,13 +47,13 @@ def transcribe_audio(file_path, backend=None, model=None):
         return None
 
 
-def reset_models():
+def reset_models() -> None:
     """Drop cached STT models so the next transcription reloads with current
     settings (frees memory after a backend/model/device change)."""
     local._models.clear()
 
 
-def preload():
+def preload() -> None:
     """Warm the configured local STT model (e.g. at daemon startup) so the first
     real voice note isn't delayed by a model load. Best-effort; no-op for cloud
     backends or when no local STT dependency is installed."""

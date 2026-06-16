@@ -30,8 +30,11 @@ def test_set_fields(tmp_home, capsys):
 def test_set_pushes_reload_when_server_running(tmp_home, monkeypatch):
     pushed = {}
     monkeypatch.setattr(ipc, "is_server_running", lambda: True)
-    monkeypatch.setattr(ipc, "request_sync",
-                        lambda cmd, **k: pushed.setdefault("cmd", cmd) or {"ok": True, "data": {}})
+    monkeypatch.setattr(
+        ipc,
+        "request_sync",
+        lambda cmd, **k: pushed.setdefault("cmd", cmd) or {"ok": True, "data": {}},
+    )
     sttctl.set_config(model="base")
     assert pushed["cmd"] == "stt_reload"
 

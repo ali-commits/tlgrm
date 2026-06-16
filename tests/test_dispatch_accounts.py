@@ -1,4 +1,3 @@
-import os
 import pytest
 from tlgrm import dispatch, accounts
 
@@ -24,7 +23,8 @@ def test_account_use_sets_default(tmp_home, capsys):
     accounts.add_account("personal")
     accounts.add_account("work")
     dispatch.run_account_command(
-        type("A", (), {"account_command": "use", "name": "work"}))
+        type("A", (), {"account_command": "use", "name": "work"})
+    )
     assert accounts.load_config()["default_account"] == "work"
 
 
@@ -32,5 +32,6 @@ def test_account_remove(tmp_home):
     accounts.add_account("a")
     accounts.add_account("b")
     dispatch.run_account_command(
-        type("A", (), {"account_command": "remove", "name": "a"}))
+        type("A", (), {"account_command": "remove", "name": "a"})
+    )
     assert "a" not in accounts.load_config()["accounts"]

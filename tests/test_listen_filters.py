@@ -2,10 +2,11 @@
 
 import pytest
 
-from tlgrm import webhooks, daemon
+from tlgrm import webhooks, daemon, listen_core
 
 
 # --- token splitting -------------------------------------------------------
+
 
 def test_split_tokens_handles_commas_and_repeats():
     assert webhooks._split_tokens(["@a,@b", " @c "]) == ["@a", "@b", "@c"]
@@ -15,28 +16,54 @@ def test_split_tokens_handles_commas_and_repeats():
 
 # --- matching --------------------------------------------------------------
 
+
 def test_matches_by_chat_id():
-    assert webhooks._matches({123}, set(), chat_id=123, sender_id=999,
-                             chat_username=None, sender_username=None)
+    assert webhooks._matches(
+        {123},
+        set(),
+        chat_id=123,
+        sender_id=999,
+        chat_username=None,
+        sender_username=None,
+    )
 
 
 def test_matches_by_sender_id():
     # e.g. ignoring a person whose message arrives inside a group chat
-    assert webhooks._matches({555}, set(), chat_id=-100123, sender_id=555,
-                             chat_username="group", sender_username="spammer")
+    assert webhooks._matches(
+        {555},
+        set(),
+        chat_id=-100123,
+        sender_id=555,
+        chat_username="group",
+        sender_username="spammer",
+    )
 
 
 def test_matches_by_username_case_insensitive():
-    assert webhooks._matches(set(), {"workgroup"}, chat_id=-1, sender_id=-2,
-                             chat_username="WorkGroup", sender_username=None)
+    assert webhooks._matches(
+        set(),
+        {"workgroup"},
+        chat_id=-1,
+        sender_id=-2,
+        chat_username="WorkGroup",
+        sender_username=None,
+    )
 
 
 def test_no_match_returns_false():
-    assert not webhooks._matches({123}, {"foo"}, chat_id=1, sender_id=2,
-                                 chat_username="bar", sender_username="baz")
+    assert not webhooks._matches(
+        {123},
+        {"foo"},
+        chat_id=1,
+        sender_id=2,
+        chat_username="bar",
+        sender_username="baz",
+    )
 
 
 # --- resolution (entity lookup mocked) ------------------------------------
+
 
 class _FakeUser:
     def __init__(self, id, username=None):
@@ -46,7 +73,7 @@ class _FakeUser:
 
 @pytest.mark.asyncio
 async def test_resolve_filters_uses_marked_peer_id(monkeypatch):
-    monkeypatch.setattr(webhooks.utils, "get_peer_id", lambda e: e.id)
+    monkeypatch.setattr(listen_core.utils, "get_peer_id", lambda e: e.id)
 
     class _Client:
         async def get_entity(self, token):
@@ -64,11 +91,12 @@ async def test_resolve_filters_falls_back_on_unresolvable(monkeypatch):
             raise ValueError("no such entity")
 
     ids, names = await webhooks._resolve_filters(_Client(), ["-100999", "@ghost"])
-    assert ids == {-100999}        # numeric token matched literally
-    assert names == {"ghost"}      # @username matched literally
+    assert ids == {-100999}  # numeric token matched literally
+    assert names == {"ghost"}  # @username matched literally
 
 
 # --- daemon embedding / validation ----------------------------------------
+
 
 def test_validate_filter_tokens_rejects_injection():
     with pytest.raises(ValueError):
@@ -104,8 +132,9 @@ def test_daemon_install_embeds_filters(monkeypatch):
 
     monkeypatch.setattr(daemon.os, "fdopen", lambda *a, **k: _Sink())
 
-    daemon.daemon_install("https://example.com/hook",
-                          only=["@workgroup"], ignore=["@spammer", "12345"])
+    daemon.daemon_install(
+        "https://example.com/hook", only=["@workgroup"], ignore=["@spammer", "12345"]
+    )
 
     unit = captured["text"]
     assert "--only @workgroup" in unit

@@ -12,8 +12,13 @@ def tmp_home(monkeypatch, tmp_path):
 
 def test_defaults(tmp_home):
     cfg = accounts.listen_config("work")
-    assert cfg == {"enabled": False, "webhook_url": None, "webhook_headers": [],
-                   "filter": {"mode": "block", "list": []}, "window": None}
+    assert cfg == {
+        "enabled": False,
+        "webhook_url": None,
+        "webhook_headers": [],
+        "filter": {"mode": "block", "list": []},
+        "window": None,
+    }
 
 
 def test_set_enabled_and_webhook(tmp_home):
@@ -30,8 +35,11 @@ def test_set_enabled_and_webhook(tmp_home):
 def test_filter_mode_and_list(tmp_home):
     accounts.filter_set_mode("work", "listen", "allow")
     accounts.filter_add("work", "listen", ["@a", "@b"])
-    accounts.filter_add("work", "listen", ["@a"])           # dedup
-    assert accounts.listen_config("work")["filter"] == {"mode": "allow", "list": ["@a", "@b"]}
+    accounts.filter_add("work", "listen", ["@a"])  # dedup
+    assert accounts.listen_config("work")["filter"] == {
+        "mode": "allow",
+        "list": ["@a", "@b"],
+    }
     accounts.filter_remove("work", "listen", ["@a"])
     assert accounts.listen_config("work")["filter"]["list"] == ["@b"]
     accounts.filter_clear("work", "listen")

@@ -13,9 +13,14 @@ def test_server_install_writes_unit(monkeypatch):
     captured = {"text": ""}
 
     class _Sink:
-        def write(self, s): captured["text"] += s
-        def __enter__(self): return self
-        def __exit__(self, *a): return False
+        def write(self, s):
+            captured["text"] += s
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
 
     monkeypatch.setattr(daemon.os, "fdopen", lambda *a, **k: _Sink())
 

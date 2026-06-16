@@ -9,32 +9,33 @@ back on every change, so it deliberately preserves unrelated sections (e.g.
 """
 
 import os
+from typing import Any
 
 from .core.errors import TlgrmError
 
 
-def _config_path():
+def _config_path() -> str:
     return os.getenv("TG_CONFIG_PATH", os.path.expanduser("~/.tlgrm/config.toml"))
 
 
-def _accounts_dir():
+def _accounts_dir() -> str:
     return os.path.expanduser("~/.tlgrm/accounts")
 
 
-def _config_path_text():
+def _config_path_text() -> str:
     """Raw file text (test helper; '' if the file does not exist)."""
     path = _config_path()
     return open(path).read() if os.path.exists(path) else ""
 
 
-def _strip_none(value):
+def _strip_none(value: Any) -> Any:
     """Recursively drop keys whose value is None (TOML cannot represent null)."""
     if isinstance(value, dict):
         return {k: _strip_none(v) for k, v in value.items() if v is not None}
     return value
 
 
-def load_config():
+def load_config() -> dict[str, Any]:
     path = _config_path()
     if not os.path.exists(path):
         return {"default_account": None, "accounts": {}}
@@ -43,14 +44,15 @@ def load_config():
     except ModuleNotFoundError:  # Python < 3.11
         import tomli as tomllib
     with open(path, "rb") as f:
-        data = tomllib.load(f)
+        data: dict[str, Any] = tomllib.load(f)
     data.setdefault("accounts", {})
     data.setdefault("default_account", None)
     return data
 
 
-def save_config(data):
+def save_config(data: dict[str, Any]) -> None:
     import tomli_w
+
     path = _config_path()
     os.makedirs(os.path.dirname(path) or ".", mode=0o700, exist_ok=True)
     tmp = path + ".tmp"
@@ -66,11 +68,11 @@ def save_config(data):
     os.chmod(path, 0o600)
 
 
-def account_session_path(name):
+def account_session_path(name: str) -> str:
     return os.path.join(_accounts_dir(), f"{name}.session")
 
 
-def add_account(name):
+def add_account(name: str) -> None:
     cfg = load_config()
     cfg["accounts"].setdefault(name, {})
     if not cfg.get("default_account"):
@@ -79,7 +81,7 @@ def add_account(name):
     os.makedirs(_accounts_dir(), mode=0o700, exist_ok=True)
 
 
-def set_default(name):
+def set_default(name: str) -> None:
     cfg = load_config()
     if name not in cfg["accounts"]:
         raise TlgrmError(f"No such account: {name!r}. See 'tlgrm account list'.")
@@ -87,7 +89,7 @@ def set_default(name):
     save_config(cfg)
 
 
-def rename_account(old, new):
+def rename_account(old: str, new: str) -> None:
     cfg = load_config()
     if old not in cfg["accounts"]:
         raise TlgrmError(f"No such account: {old!r}.")
@@ -102,7 +104,7 @@ def rename_account(old, new):
         os.replace(src, dst)
 
 
-def remove_account(name):
+def remove_account(name: str) -> None:
     cfg = load_config()
     if name not in cfg["accounts"]:
         raise TlgrmError(f"No such account: {name!r}.")
@@ -115,7 +117,7 @@ def remove_account(name):
         os.remove(sess)
 
 
-def resolve_account(name=None):
+def resolve_account(name: str | None = None) -> str:
     cfg = load_config()
     chosen = name or cfg.get("default_account")
     if not chosen:
@@ -125,11 +127,11 @@ def resolve_account(name=None):
     return chosen
 
 
-def _legacy_session_path():
+def _legacy_session_path() -> str:
     return os.path.expanduser("~/.tlgrm/tg_session.session")
 
 
-def migrate_legacy_session():
+def migrate_legacy_session() -> bool:
     """Move a pre-0.3.0 single session to account 'default'. Returns True if it
     migrated, False if there was nothing to do."""
     legacy = _legacy_session_path()
@@ -145,7 +147,7 @@ def migrate_legacy_session():
     return True
 
 
-def session_path_for(account=None, must_exist=True):
+def session_path_for(account: str | None = None, must_exist: bool = True) -> str:
     """Resolve the session base path for a command.
 
     For normal commands a TG_SESSION_PATH / --session override still wins
@@ -161,20 +163,21 @@ def session_path_for(account=None, must_exist=True):
     return account_session_path(resolve_account(account))
 
 
-def _account(cfg, name):
+def _account(cfg: dict[str, Any], name: str) -> dict[str, Any]:
     if name not in cfg["accounts"]:
         raise TlgrmError(f"No such account: {name!r}. See 'tlgrm account list'.")
-    return cfg["accounts"][name]
+    account: dict[str, Any] = cfg["accounts"][name]
+    return account
 
 
-def filter_config(name, domain):
+def filter_config(name: str, domain: str) -> dict[str, Any]:
     """Normalized {mode, list} for a filter domain ('listen' or 'write')."""
     acc = _account(load_config(), name)
     flt = (acc.get("filter") or {}).get(domain) or {}
     return {"mode": flt.get("mode", "block"), "list": list(flt.get("list", []))}
 
 
-def listen_config(name):
+def listen_config(name: str) -> dict[str, Any]:
     """Normalized per-account listen settings (with defaults applied)."""
     acc = _account(load_config(), name)
     return {
@@ -186,25 +189,25 @@ def listen_config(name):
     }
 
 
-def set_listen_window(name, window):
+def set_listen_window(name: str, window: str) -> None:
     cfg = load_config()
     _account(cfg, name)["listen_window"] = window
     save_config(cfg)
 
 
-def clear_listen_window(name):
+def clear_listen_window(name: str) -> None:
     cfg = load_config()
     _account(cfg, name).pop("listen_window", None)
     save_config(cfg)
 
 
-def set_listen_enabled(name, enabled):
+def set_listen_enabled(name: str, enabled: bool) -> None:
     cfg = load_config()
     _account(cfg, name)["listen_enabled"] = bool(enabled)
     save_config(cfg)
 
 
-def set_webhook(name, url, headers=None):
+def set_webhook(name: str, url: str, headers: list[str] | None = None) -> None:
     cfg = load_config()
     acc = _account(cfg, name)
     acc["webhook_url"] = url
@@ -212,7 +215,7 @@ def set_webhook(name, url, headers=None):
     save_config(cfg)
 
 
-def clear_webhook(name):
+def clear_webhook(name: str) -> None:
     cfg = load_config()
     acc = _account(cfg, name)
     acc.pop("webhook_url", None)
@@ -220,11 +223,12 @@ def clear_webhook(name):
     save_config(cfg)
 
 
-def _filter_node(acc, domain):
-    return acc.setdefault("filter", {}).setdefault(domain, {})
+def _filter_node(acc: dict[str, Any], domain: str) -> dict[str, Any]:
+    node: dict[str, Any] = acc.setdefault("filter", {}).setdefault(domain, {})
+    return node
 
 
-def filter_set_mode(name, domain, mode):
+def filter_set_mode(name: str, domain: str, mode: str) -> None:
     if mode not in ("allow", "block"):
         raise TlgrmError(f"Filter mode must be 'allow' or 'block', got {mode!r}.")
     cfg = load_config()
@@ -232,24 +236,24 @@ def filter_set_mode(name, domain, mode):
     save_config(cfg)
 
 
-def filter_add(name, domain, tokens):
+def filter_add(name: str, domain: str, tokens: list[str]) -> None:
     cfg = load_config()
     node = _filter_node(_account(cfg, name), domain)
-    lst = node.setdefault("list", [])
+    lst: list[str] = node.setdefault("list", [])
     for t in tokens:
         if t and t not in lst:
             lst.append(t)
     save_config(cfg)
 
 
-def filter_remove(name, domain, tokens):
+def filter_remove(name: str, domain: str, tokens: list[str]) -> None:
     cfg = load_config()
     node = _filter_node(_account(cfg, name), domain)
     node["list"] = [x for x in node.get("list", []) if x not in set(tokens)]
     save_config(cfg)
 
 
-def filter_clear(name, domain):
+def filter_clear(name: str, domain: str) -> None:
     cfg = load_config()
     _filter_node(_account(cfg, name), domain)["list"] = []
     save_config(cfg)

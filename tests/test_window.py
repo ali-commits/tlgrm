@@ -15,7 +15,7 @@ def test_parse_and_within_window():
     assert lc._parse_window("09:00-17:00") == (540, 1020)
     assert lc._within_window(600, (540, 1020)) is True
     assert lc._within_window(1100, (540, 1020)) is False
-    assert lc._within_window(1380, (1320, 360)) is True     # overnight 22:00-06:00
+    assert lc._within_window(1380, (1320, 360)) is True  # overnight 22:00-06:00
     assert lc._within_window(720, (1320, 360)) is False
     assert lc._parse_window("bad") is None
 
@@ -35,7 +35,7 @@ def test_listenctl_window(tmp_home, capsys):
 
 
 def test_window_set_rejects_invalid(tmp_home, capsys):
-    listenctl.window_set("work", "25:99-9")          # invalid
+    listenctl.window_set("work", "25:99-9")  # invalid
     out = capsys.readouterr().out
     assert '"success": false' in out.lower()
     assert accounts.listen_config("work")["window"] is None  # not stored

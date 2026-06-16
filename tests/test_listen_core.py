@@ -1,4 +1,3 @@
-import asyncio
 from tlgrm import listen_core as lc
 
 
@@ -22,6 +21,7 @@ def test_passes_allow_and_block():
 
 def test_should_transcribe_respects_enabled(monkeypatch):
     import tlgrm.stt.settings as s
+
     monkeypatch.setattr(s, "is_enabled", lambda: False)
     assert lc._should_transcribe("voice") is False
     monkeypatch.setattr(s, "is_enabled", lambda: True)

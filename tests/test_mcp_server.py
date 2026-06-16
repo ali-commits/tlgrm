@@ -1,11 +1,30 @@
-import pytest
 from tlgrm.mcp.server import build_server
 
-READ_TOOLS = {"whoami", "list_chats", "search_messages", "get_history",
-              "get_members", "user_info", "chat_info", "download_media"}
-WRITE_TOOLS = {"send_message", "edit_message", "mark_read", "react",
-               "forward_messages", "pin", "unpin", "mute", "unmute",
-               "create_group", "add_members", "schedule_message", "send_poll"}
+READ_TOOLS = {
+    "whoami",
+    "list_chats",
+    "search_messages",
+    "get_history",
+    "get_members",
+    "user_info",
+    "chat_info",
+    "download_media",
+}
+WRITE_TOOLS = {
+    "send_message",
+    "edit_message",
+    "mark_read",
+    "react",
+    "forward_messages",
+    "pin",
+    "unpin",
+    "mute",
+    "unmute",
+    "create_group",
+    "add_members",
+    "schedule_message",
+    "send_poll",
+}
 DESTRUCTIVE_TOOLS = {"delete_messages", "leave_chat", "remove_members"}
 
 

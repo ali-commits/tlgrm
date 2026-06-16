@@ -8,13 +8,38 @@ from tlgrm.cli import build_parser
 def test_parser_has_all_commands():
     parser = build_parser()
     sub = next(a for a in parser._actions if a.dest == "command")
-    for cmd in ["login", "chats", "send", "edit", "delete",
-                "history", "members", "listen", "daemon",
-                "search", "reply", "read", "download",
-                "whoami", "user-info", "chat-info",
-                "forward", "react", "pin", "unpin", "mute", "unmute", "saved",
-                "create-group", "add-members", "remove-members", "leave", "schedule", "poll",
-                "transcribe",]:
+    for cmd in [
+        "login",
+        "chats",
+        "send",
+        "edit",
+        "delete",
+        "history",
+        "members",
+        "listen",
+        "daemon",
+        "search",
+        "reply",
+        "read",
+        "download",
+        "whoami",
+        "user-info",
+        "chat-info",
+        "forward",
+        "react",
+        "pin",
+        "unpin",
+        "mute",
+        "unmute",
+        "saved",
+        "create-group",
+        "add-members",
+        "remove-members",
+        "leave",
+        "schedule",
+        "poll",
+        "transcribe",
+    ]:
         assert cmd in sub.choices
 
 
@@ -38,10 +63,12 @@ def test_session_flag_sets_env(monkeypatch):
     monkeypatch.delenv("TG_SESSION_PATH", raising=False)
     monkeypatch.setattr(sys, "argv", ["tlgrm", "--session", "~/mcp_sess", "chats"])
     from tlgrm import dispatch
+
     monkeypatch.setattr(dispatch, "run_command_routed", lambda args: None)
     monkeypatch.setattr(cli.asyncio, "run", lambda coro: coro)
     cli.main()
     import os
+
     assert os.environ["TG_SESSION_PATH"] == os.path.expanduser("~/mcp_sess")
 
 
@@ -90,7 +117,9 @@ def test_filter_write_subcommands():
 
 def test_schedule_subcommands():
     parser = build_parser()
-    a = parser.parse_args(["schedule", "send", "--target", "@x", "--text", "hi", "--in", "2h"])
+    a = parser.parse_args(
+        ["schedule", "send", "--target", "@x", "--text", "hi", "--in", "2h"]
+    )
     assert a.schedule_command == "send" and a.in_ == "2h"
     a = parser.parse_args(["schedule", "cancel", "--target", "@x", "--id", "5", "6"])
     assert a.schedule_command == "cancel" and a.ids == [5, 6]

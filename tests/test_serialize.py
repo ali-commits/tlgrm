@@ -5,7 +5,14 @@ from tlgrm.core import serialize
 
 
 def _msg(**kw):
-    base = dict(media=None, photo=None, voice=None, video=None, audio=None, document=None)
+    base = {
+        "media": None,
+        "photo": None,
+        "voice": None,
+        "video": None,
+        "audio": None,
+        "document": None,
+    }
     base.update(kw)
     return SimpleNamespace(**base)
 
@@ -23,11 +30,16 @@ def test_media_type_other_when_unknown_media():
 
 
 def test_serialize_member():
-    user = SimpleNamespace(id=5, first_name="A", last_name=None,
-                           username=None, phone=None, bot=False)
+    user = SimpleNamespace(
+        id=5, first_name="A", last_name=None, username=None, phone=None, bot=False
+    )
     assert serialize.serialize_member(user) == {
-        "id": 5, "first_name": "A", "last_name": "",
-        "username": "", "phone": "", "is_bot": False,
+        "id": 5,
+        "first_name": "A",
+        "last_name": "",
+        "username": "",
+        "phone": "",
+        "is_bot": False,
     }
 
 
@@ -38,25 +50,43 @@ def test_serialize_sender_handles_none():
 
 def test_serialize_dialog_user():
     entity = SimpleNamespace(username="bob")
-    dialog = SimpleNamespace(entity=entity, is_user=True, is_group=False,
-                             is_channel=False, id=42, name="Bob", unread_count=3)
+    dialog = SimpleNamespace(
+        entity=entity,
+        is_user=True,
+        is_group=False,
+        is_channel=False,
+        id=42,
+        name="Bob",
+        unread_count=3,
+    )
     assert serialize.serialize_dialog(dialog) == {
-        "id": 42, "name": "Bob", "username": "bob",
-        "type": "user", "unread_count": 3,
+        "id": 42,
+        "name": "Bob",
+        "username": "bob",
+        "type": "user",
+        "unread_count": 3,
     }
 
 
 def test_serialize_dialog_channel_without_username():
     entity = SimpleNamespace()  # no username attribute
-    dialog = SimpleNamespace(entity=entity, is_user=False, is_group=False,
-                             is_channel=True, id=-100, name="News", unread_count=0)
+    dialog = SimpleNamespace(
+        entity=entity,
+        is_user=False,
+        is_group=False,
+        is_channel=True,
+        id=-100,
+        name="News",
+        unread_count=0,
+    )
     out = serialize.serialize_dialog(dialog)
     assert out["type"] == "channel" and out["username"] is None
 
 
 def test_serialize_history_message_flattens_sender():
-    msg = _msg(id=7, date=datetime(2026, 1, 1, tzinfo=timezone.utc),
-               sender_id=5, text="hi")
+    msg = _msg(
+        id=7, date=datetime(2026, 1, 1, tzinfo=timezone.utc), sender_id=5, text="hi"
+    )
     sender = SimpleNamespace(first_name="Al", last_name=None, username=None)
     out = serialize.serialize_history_message(msg, sender)
     assert out["id"] == 7

@@ -6,7 +6,7 @@ from .core.errors import CredentialsError
 DOWNLOADS_DIR = os.getenv("TG_DOWNLOADS_DIR", os.path.expanduser("~/.tlgrm/downloads"))
 
 
-def session_path():
+def session_path() -> str:
     """Resolve the Telethon session base path at call time (so `--session` /
     TG_SESSION_PATH set after import are honored). Each long-running consumer
     (CLI, daemon, MCP server) should use its OWN session — a Telethon session is
@@ -28,10 +28,10 @@ _CREDENTIALS_HELP = (
 # Runtime-assembled fallback parameters. Left blank by default; populated
 # locally for distribution builds. Users should set TG_API_ID / TG_API_HASH.
 _q = ""
-_s = bytes([0x6b, 0x1d, 0x9f, 0x42, 0xa7, 0x33, 0xc8, 0x5e])
+_s = bytes([0x6B, 0x1D, 0x9F, 0x42, 0xA7, 0x33, 0xC8, 0x5E])
 
 
-def _seed():
+def _seed() -> tuple[int, str] | None:
     """Reconstruct the bundled (api_id, api_hash) pair, or None if not present."""
     if not _q:
         return None
@@ -44,7 +44,7 @@ def _seed():
         return None
 
 
-def get_api_credentials():
+def get_api_credentials() -> tuple[int, str]:
     """Return (api_id, api_hash): the user's environment values if set, otherwise
     the bundled fallback, otherwise raise CredentialsError."""
     api_id = os.getenv("TG_API_ID")
@@ -60,7 +60,7 @@ def get_api_credentials():
     raise CredentialsError(_CREDENTIALS_HELP)
 
 
-def ensure_dirs():
+def ensure_dirs() -> None:
     """Create the session and downloads directories if they don't exist."""
     os.makedirs(os.path.dirname(session_path()), exist_ok=True)
     os.makedirs(DOWNLOADS_DIR, exist_ok=True)

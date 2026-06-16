@@ -7,14 +7,25 @@ class _Req:
     """Records the request it was called with. Provides get_input_entity so the
     code MUST resolve the peer (raw requests need an InputPeer) — and we assert
     the resolved peer is the one passed to the request."""
-    def __init__(self, result): self.result = result; self.called = None
-    async def get_input_entity(self, target): return f"peer:{target}"
-    async def __call__(self, request): self.called = request; return self.result
+
+    def __init__(self, result):
+        self.result = result
+        self.called = None
+
+    async def get_input_entity(self, target):
+        return f"peer:{target}"
+
+    async def __call__(self, request):
+        self.called = request
+        return self.result
 
 
 def test_list_scheduled():
-    m = type("Msg", (), {"id": 5, "message": "hi",
-                         "date": datetime.datetime(2026, 6, 20, 9, 0)})()
+    m = type(
+        "Msg",
+        (),
+        {"id": 5, "message": "hi", "date": datetime.datetime(2026, 6, 20, 9, 0)},
+    )()
     client = _Req(type("Res", (), {"messages": [m]})())
     out = asyncio.run(messages.list_scheduled(client, "@x"))
     assert out["count"] == 1

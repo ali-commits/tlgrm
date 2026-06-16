@@ -7,9 +7,10 @@ import json
 import asyncio
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 import httpx
-from telethon import utils
+from telethon import TelegramClient, utils
 
 from .config import DOWNLOADS_DIR
 from .core import serialize
@@ -18,24 +19,33 @@ from .stt import transcribe_audio
 logger = logging.getLogger("tlgrm-listen")
 
 
-async def forward_webhook(url, payload, headers=None, retries=3):
+async def forward_webhook(
+    url: str,
+    payload: dict[str, Any],
+    headers: dict[str, str] | None = None,
+    retries: int = 3,
+) -> None:
     for attempt in range(1, retries + 1):
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.post(url, json=payload, headers=headers, timeout=10.0)
+                resp = await client.post(
+                    url, json=payload, headers=headers, timeout=10.0
+                )
             if 200 <= resp.status_code < 300:
                 logger.info(f"Webhook forwarded ({resp.status_code}).")
                 return
             logger.error(f"Webhook failed {resp.status_code}: {resp.text}")
         except Exception as e:
-            logger.error(f"Webhook POST to {url} failed (attempt {attempt}/{retries}): {e}")
+            logger.error(
+                f"Webhook POST to {url} failed (attempt {attempt}/{retries}): {e}"
+            )
         if attempt < retries:
             await asyncio.sleep(2 ** (attempt - 1))
 
 
-def parse_headers(header_list):
+def parse_headers(header_list: list[str] | None) -> dict[str, str]:
     """Turn ['Name: Value', ...] into a dict {Name: Value}."""
-    out = {}
+    out: dict[str, str] = {}
     for h in header_list or []:
         if ":" in h:
             k, v = h.split(":", 1)
@@ -43,15 +53,18 @@ def parse_headers(header_list):
     return out
 
 
-def _split_tokens(values):
-    tokens = []
+def _split_tokens(values: list[str] | None) -> list[str]:
+    tokens: list[str] = []
     for value in values or []:
         tokens.extend(t.strip() for t in str(value).split(",") if t.strip())
     return tokens
 
 
-async def _resolve_filters(client, tokens):
-    ids, names = set(), set()
+async def _resolve_filters(
+    client: TelegramClient, tokens: list[str]
+) -> tuple[set[int], set[str]]:
+    ids: set[int] = set()
+    names: set[str] = set()
     for token in tokens:
         try:
             entity = await client.get_entity(token)
@@ -60,8 +73,9 @@ async def _resolve_filters(client, tokens):
             if uname:
                 names.add(uname.lower())
         except Exception as e:
-            logger.warning(f"Could not resolve filter target {token!r} ({e}); "
-                           "matching literally.")
+            logger.warning(
+                f"Could not resolve filter target {token!r} ({e}); matching literally."
+            )
             stripped = token.lstrip("@")
             if stripped.lstrip("-").isdigit():
                 ids.add(int(stripped))
@@ -70,13 +84,20 @@ async def _resolve_filters(client, tokens):
     return ids, names
 
 
-def _matches(ids, names, chat_id, sender_id, chat_username, sender_username):
+def _matches(
+    ids: set[int],
+    names: set[str],
+    chat_id: int | None,
+    sender_id: int | None,
+    chat_username: str | None,
+    sender_username: str | None,
+) -> bool:
     if chat_id in ids or sender_id in ids:
         return True
     return any(u and u.lower() in names for u in (chat_username, sender_username))
 
 
-def _parse_window(text):
+def _parse_window(text: str) -> tuple[int, int] | None:
     """Parse 'HH:MM-HH:MM' into (start_minute, end_minute), or None if invalid."""
     try:
         a, b = text.split("-")
@@ -89,7 +110,7 @@ def _parse_window(text):
         return None
 
 
-def _within_window(minutes, window):
+def _within_window(minutes: int, window: tuple[int, int]) -> bool:
     start, end = window
     if start == end:
         return True
@@ -98,47 +119,69 @@ def _within_window(minutes, window):
     return minutes >= start or minutes < end  # overnight wrap
 
 
-def _now_minutes():
+def _now_minutes() -> int:
     now = datetime.now()
     return now.hour * 60 + now.minute
 
 
 class ListenState:
     """Live, swappable listening config for one account."""
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.enabled = False
-        self.webhook_url = None
-        self.headers = {}
-        self.mode = "block"      # allow | block
-        self.ids = set()
-        self.names = set()
-        self.window = None
+        self.webhook_url: str | None = None
+        self.headers: dict[str, str] = {}
+        self.mode = "block"  # allow | block
+        self.ids: set[int] = set()
+        self.names: set[str] = set()
+        self.window: tuple[int, int] | None = None
 
 
-def _passes(state, chat_id, sender_id, cu, su):
+def _passes(
+    state: ListenState,
+    chat_id: int | None,
+    sender_id: int | None,
+    cu: str | None,
+    su: str | None,
+) -> bool:
     matched = _matches(state.ids, state.names, chat_id, sender_id, cu, su)
     return matched if state.mode == "allow" else not matched
 
 
-def _should_transcribe(media_type):
+def _should_transcribe(media_type: str | None) -> bool:
     from .stt.settings import is_enabled
+
     return media_type in ("voice", "audio") and is_enabled()
 
 
-async def build_payload(event, account=None):
+async def build_payload(
+    event: Any, account: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Build the webhook JSON payload for an incoming message (incl. media
     download + transcription). `account` is {"name","id"} or None (standalone)."""
     msg = event.message
     chat = await event.get_chat()
     sender = await event.get_sender()
     sender_info = serialize.serialize_sender(sender)
-    chat_type = ("user" if event.is_private else "group" if event.is_group
-                 else "channel" if event.is_channel else "unknown")
+    chat_type = (
+        "user"
+        if event.is_private
+        else "group"
+        if event.is_group
+        else "channel"
+        if event.is_channel
+        else "unknown"
+    )
     chat_info = serialize.serialize_chat(chat, chat_type)
     chat_info["id"] = event.chat_id
 
-    media = {"present": False, "type": None, "local_path": None,
-             "transcription": None, "self_destruct": False}
+    media: dict[str, Any] = {
+        "present": False,
+        "type": None,
+        "local_path": None,
+        "transcription": None,
+        "self_destruct": False,
+    }
     if msg.media:
         media["present"] = True
         media["type"] = serialize.media_type(msg)
@@ -156,20 +199,31 @@ async def build_payload(event, account=None):
             except Exception as ex:
                 logger.error(f"Media download/transcribe failed: {ex}")
 
-    payload = {
+    payload: dict[str, Any] = {
         "event": "new_message",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "message": {"id": msg.id, "text": msg.text or "",
-                    "date": msg.date.isoformat() if msg.date else "",
-                    "reply_to_msg_id": msg.reply_to_msg_id},
-        "chat": chat_info, "sender": sender_info, "media": media,
+        "message": {
+            "id": msg.id,
+            "text": msg.text or "",
+            "date": msg.date.isoformat() if msg.date else "",
+            "reply_to_msg_id": msg.reply_to_msg_id,
+        },
+        "chat": chat_info,
+        "sender": sender_info,
+        "media": media,
     }
     if account is not None:
         payload["account"] = account
     return payload
 
 
-async def process_event(event, state, account=None, pending=None, emit_console=False):
+async def process_event(
+    event: Any,
+    state: ListenState,
+    account: dict[str, Any] | None = None,
+    pending: set["asyncio.Task[None]"] | None = None,
+    emit_console: bool = False,
+) -> None:
     """Filter, build, and forward one incoming message according to `state`."""
     chat = await event.get_chat()
     sender = await event.get_sender()
@@ -184,7 +238,9 @@ async def process_event(event, state, account=None, pending=None, emit_console=F
         print(json.dumps(payload, indent=2, ensure_ascii=False))
     if state.webhook_url:
         loop = asyncio.get_running_loop()
-        task = loop.create_task(forward_webhook(state.webhook_url, payload, state.headers))
+        task = loop.create_task(
+            forward_webhook(state.webhook_url, payload, state.headers)
+        )
         if pending is not None:
             pending.add(task)
             task.add_done_callback(pending.discard)

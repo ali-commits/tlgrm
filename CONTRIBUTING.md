@@ -13,8 +13,11 @@ Be respectful and constructive. Assume good faith, keep discussions on-topic, an
 git clone https://github.com/<your-username>/tlgrm.git
 cd tlgrm
 
-# Install in editable mode (with the optional speech-to-text extra)
-pip install -e ".[stt]"
+# Install with the dev tools + all runtime extras (uv recommended)
+uv sync --extra dev --extra all
+
+# Install the pre-commit hooks (ruff format + lint run on every commit)
+uv run prek install
 
 # Provide your own Telegram API credentials for manual testing
 export TG_API_ID=1234567
@@ -43,13 +46,36 @@ docs/                 # user documentation
 2. Create a branch: `git checkout -b feature/short-description`.
 3. Keep changes focused and match the surrounding code style.
 4. Update the relevant docs in `docs/` and the `README.md` when behavior changes.
-5. Verify the package still imports and the CLI works:
+5. Run the checks (see **Code quality** below) and verify the CLI works:
 
    ```bash
-   python -m py_compile src/tlgrm/*.py
    TG_API_ID=1 TG_API_HASH=x python -c "import tlgrm.cli"
    tlgrm --help
    ```
+
+## Code quality
+
+The project uses **ruff** (linter + formatter), **mypy** and **pyrefly** (two
+type checkers), and **prek** (a fast `pre-commit` runner) — all installed via
+`uv sync --extra dev`. The source is fully typed and both checkers run clean;
+keep it that way.
+
+```bash
+uv run ruff format src tests      # auto-format (or: ./scripts/format.sh)
+uv run ruff check src tests --fix # lint + autofix
+uv run mypy src                   # type-check (strict)
+uv run pyrefly check              # type-check (Pyrefly, fast)
+uv run pytest                     # run the test suite (parallel)
+```
+
+Both type checkers are kept passing. Telethon and the optional STT/MCP backends
+are treated as untyped (mypy's `ignore_missing_imports` / Pyrefly's
+`replace-imports-with-any`) because their inline types are imprecise.
+
+`prek install` (run during setup) wires ruff format + lint to run automatically
+on every commit; run all hooks across the repo with `uv run prek run --all-files`.
+Tool configuration lives in `pyproject.toml` (`[tool.ruff]`, `[tool.mypy]`) and
+`.pre-commit-config.yaml`.
 
 ## Coding conventions
 

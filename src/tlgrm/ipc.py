@@ -5,17 +5,18 @@ import os
 import socket
 import asyncio
 import itertools
+from typing import Any
 
 from .server.protocol import read_message, write_message, request
 
 _ids = itertools.count(1)
 
 
-def socket_path():
+def socket_path() -> str:
     return os.getenv("TG_SERVER_SOCK", os.path.expanduser("~/.tlgrm/server.sock"))
 
 
-def is_server_running():
+def is_server_running() -> bool:
     """True if a server is accepting connections on the socket."""
     path = socket_path()
     if not os.path.exists(path):
@@ -30,7 +31,12 @@ def is_server_running():
         s.close()
 
 
-async def request_async(cmd, account=None, args=None, tier="destructive"):
+async def request_async(
+    cmd: str,
+    account: str | None = None,
+    args: dict[str, Any] | None = None,
+    tier: str = "destructive",
+) -> dict[str, Any] | None:
     reader, writer = await asyncio.open_unix_connection(socket_path())
     try:
         await write_message(writer, request(next(_ids), cmd, account, args, tier))
@@ -39,5 +45,10 @@ async def request_async(cmd, account=None, args=None, tier="destructive"):
         writer.close()
 
 
-def request_sync(cmd, account=None, args=None, tier="destructive"):
+def request_sync(
+    cmd: str,
+    account: str | None = None,
+    args: dict[str, Any] | None = None,
+    tier: str = "destructive",
+) -> dict[str, Any] | None:
     return asyncio.run(request_async(cmd, account, args, tier))

@@ -1,5 +1,6 @@
 """Client factory and connection lifecycle for the core layer."""
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from telethon import TelegramClient
@@ -8,7 +9,7 @@ from ..config import get_api_credentials, ensure_dirs
 from .errors import NotAuthorizedError
 
 
-def get_client(account=None, must_exist=True):
+def get_client(account: str | None = None, must_exist: bool = True) -> TelegramClient:
     """Build a TelegramClient for the given account (or the default).
 
     The session path is resolved at call time from the account registry; a
@@ -17,12 +18,13 @@ def get_client(account=None, must_exist=True):
     Raises CredentialsError if creds are unset.
     """
     from ..accounts import session_path_for
+
     ensure_dirs()
     api_id, api_hash = get_api_credentials()
     return TelegramClient(session_path_for(account, must_exist), api_id, api_hash)
 
 
-def resolve_target(target):
+def resolve_target(target: str | int) -> str | int:
     """Treat a numeric target as a chat ID; otherwise pass it through as-is."""
     try:
         return int(target)
@@ -30,7 +32,7 @@ def resolve_target(target):
         return target
 
 
-async def ensure_authorized(client):
+async def ensure_authorized(client: TelegramClient) -> None:
     """Connect the client and raise NotAuthorizedError if there's no session."""
     await client.connect()
     if not await client.is_user_authorized():
@@ -38,7 +40,7 @@ async def ensure_authorized(client):
 
 
 @asynccontextmanager
-async def open_client(account=None):
+async def open_client(account: str | None = None) -> AsyncIterator[TelegramClient]:
     """Yield a connected, authorized client and always disconnect afterwards."""
     client = get_client(account)
     try:

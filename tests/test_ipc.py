@@ -16,7 +16,9 @@ async def test_request_roundtrip(tmp_path, monkeypatch):
 
     async def echo(reader, writer):
         req = await protocol.read_message(reader)
-        await protocol.write_message(writer, protocol.ok(req["id"], {"echo": req["cmd"]}))
+        await protocol.write_message(
+            writer, protocol.ok(req["id"], {"echo": req["cmd"]})
+        )
         writer.close()
 
     server = await asyncio.start_unix_server(echo, path=sock)

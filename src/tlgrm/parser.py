@@ -3,19 +3,25 @@
 import argparse
 
 
-def build_parser():
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tlgrm",
-        description="tlgrm - unofficial command-line client & webhook daemon for Telegram")
+        description="tlgrm - unofficial command-line client & webhook daemon for Telegram",
+    )
     parser.add_argument(
-        "--session", metavar="PATH",
+        "--session",
+        metavar="PATH",
         help="Telethon session base path to use for this command (overrides "
-             "TG_SESSION_PATH). Use a separate session per long-running consumer "
-             "so the CLI, daemon, and MCP server don't share one and lock each other out.")
+        "TG_SESSION_PATH). Use a separate session per long-running consumer "
+        "so the CLI, daemon, and MCP server don't share one and lock each other out.",
+    )
     parser.add_argument(
-        "-a", "--account", metavar="NAME",
+        "-a",
+        "--account",
+        metavar="NAME",
         help="Account to act as (defaults to the configured default account). "
-             "Manage accounts with `tlgrm account`.")
+        "Manage accounts with `tlgrm account`.",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("login", help="Interactively log in to Telegram")
@@ -23,8 +29,9 @@ def build_parser():
     ap = sub.add_parser("account", help="Manage Telegram accounts (multi-login)")
     asub = ap.add_subparsers(dest="account_command", required=True)
     aadd = asub.add_parser("add", help="Log in a new account")
-    aadd.add_argument("name", nargs="?", default=None,
-                      help="Account name (default: 'default')")
+    aadd.add_argument(
+        "name", nargs="?", default=None, help="Account name (default: 'default')"
+    )
     asub.add_parser("list", help="List accounts and the default")
     ause = asub.add_parser("use", help="Set the default account")
     ause.add_argument("name")
@@ -58,7 +65,9 @@ def build_parser():
     p = sub.add_parser("history", help="Retrieve message history")
     p.add_argument("--target", required=True)
     p.add_argument("--limit", type=int, default=10)
-    p.add_argument("--offset-id", type=int, default=0, help="Start before this message ID")
+    p.add_argument(
+        "--offset-id", type=int, default=0, help="Start before this message ID"
+    )
 
     p = sub.add_parser("members", help="Retrieve chat members/participants")
     p.add_argument("--target", required=True)
@@ -102,7 +111,9 @@ def build_parser():
     p = sub.add_parser("react", help="React to a message with an emoji")
     p.add_argument("--target", required=True)
     p.add_argument("--message-id", required=True, type=int)
-    p.add_argument("--emoji", required=True, help="Emoji (empty string clears the reaction)")
+    p.add_argument(
+        "--emoji", required=True, help="Emoji (empty string clears the reaction)"
+    )
     p.add_argument("--big", action="store_true")
 
     p = sub.add_parser("pin", help="Pin a message")
@@ -165,10 +176,14 @@ def build_parser():
     p.add_argument("--quiz", action="store_true")
     p.add_argument("--correct", type=int, help="Index of the correct answer (quiz)")
 
-    _only_help = ("Whitelist: only listen to this chat/user (@username, id, or "
-                  "phone). Repeatable or comma-separated. Matches the chat or the sender.")
-    _ignore_help = ("Blacklist: never listen to this chat/user (@username, id, or "
-                    "phone). Repeatable or comma-separated. Matches the chat or the sender.")
+    _only_help = (
+        "Whitelist: only listen to this chat/user (@username, id, or "
+        "phone). Repeatable or comma-separated. Matches the chat or the sender."
+    )
+    _ignore_help = (
+        "Blacklist: never listen to this chat/user (@username, id, or "
+        "phone). Repeatable or comma-separated. Matches the chat or the sender."
+    )
 
     p = sub.add_parser("listen", help="Run webhook listener for new messages")
     p.add_argument("--webhook-url")
@@ -225,12 +240,17 @@ def build_parser():
     sp = sub.add_parser("server", help="Manage the background tlgrm server")
     spsub = sp.add_subparsers(dest="server_command", required=True)
     spstart = spsub.add_parser("start", help="Start the server")
-    spstart.add_argument("--foreground", action="store_true",
-                         help="Run in the foreground instead of detaching")
+    spstart.add_argument(
+        "--foreground",
+        action="store_true",
+        help="Run in the foreground instead of detaching",
+    )
     spsub.add_parser("stop", help="Stop the server")
     spsub.add_parser("status", help="Show server status")
     spsub.add_parser("restart", help="Restart the server")
-    spsub.add_parser("install", help="Install & start the server as a systemd user service")
+    spsub.add_parser(
+        "install", help="Install & start the server as a systemd user service"
+    )
     spsub.add_parser("uninstall", help="Stop & remove the systemd server service")
     spsub.add_parser("logs", help="Show recent server logs")
 
@@ -246,8 +266,11 @@ def build_parser():
 
     p = sub.add_parser("transcribe", help="Transcribe an audio file (speech-to-text)")
     p.add_argument("--file", required=True, help="Path to the audio file")
-    p.add_argument("--backend", help="Override the STT backend (faster-whisper, whisper, "
-                                     "openai, groq, deepgram, elevenlabs, google)")
+    p.add_argument(
+        "--backend",
+        help="Override the STT backend (faster-whisper, whisper, "
+        "openai, groq, deepgram, elevenlabs, google)",
+    )
     p.add_argument("--model", help="Override the backend model")
 
     return parser

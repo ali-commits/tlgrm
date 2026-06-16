@@ -39,10 +39,14 @@ def test_webhook_show_redacts_header_values(tmp_home, capsys):
 def test_filter_ops_and_live_push(tmp_home, monkeypatch):
     pushed = {}
     monkeypatch.setattr(ipc, "is_server_running", lambda: True)
-    monkeypatch.setattr(ipc, "request_sync",
-                        lambda cmd, account=None, **k: pushed.update(cmd=cmd, account=account)
-                        or {"ok": True, "data": {}})
+    monkeypatch.setattr(
+        ipc,
+        "request_sync",
+        lambda cmd, account=None, **k: (
+            pushed.update(cmd=cmd, account=account) or {"ok": True, "data": {}}
+        ),
+    )
     listenctl.filter_cmd("work", "listen", "mode", value="allow")
     listenctl.filter_cmd("work", "listen", "add", tokens=["@a"])
     assert accounts.listen_config("work")["filter"] == {"mode": "allow", "list": ["@a"]}
-    assert pushed == {"cmd": "reload", "account": "work"}   # pushed live
+    assert pushed == {"cmd": "reload", "account": "work"}  # pushed live

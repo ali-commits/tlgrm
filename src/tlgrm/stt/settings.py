@@ -6,6 +6,7 @@ auto-detect from a cloud API key > faster-whisper (default).
 
 import os
 import logging
+from typing import Any
 
 logger = logging.getLogger("tlgrm-stt")
 
@@ -18,11 +19,12 @@ CLOUD_KEY_ENV = [
     ("google", "GOOGLE_API_KEY"),
 ]
 
-def _config_path():
+
+def _config_path() -> str:
     return os.getenv("TG_CONFIG_PATH", os.path.expanduser("~/.tlgrm/config.toml"))
 
 
-def _load_config():
+def _load_config() -> dict[str, Any]:
     """Return the [stt] table from the config file, or {} if absent/unparseable."""
     try:
         import tomllib
@@ -36,13 +38,14 @@ def _load_config():
         return {}
     try:
         with open(path, "rb") as f:
-            return tomllib.load(f).get("stt", {})
+            stt: dict[str, Any] = tomllib.load(f).get("stt", {})
+            return stt
     except Exception as e:
         logger.warning(f"Could not read STT config from {path}: {e}")
         return {}
 
 
-def resolve_backend():
+def resolve_backend() -> str:
     """Resolve the active STT backend name."""
     env = os.getenv("TG_STT_BACKEND")
     if env:
@@ -56,23 +59,29 @@ def resolve_backend():
     return "faster-whisper"
 
 
-def resolve_model():
+def resolve_model() -> str | None:
     """Resolve the configured model name, or None to use the backend default."""
-    return os.getenv("TG_STT_MODEL") or _load_config().get("model")
+    model: str | None = os.getenv("TG_STT_MODEL") or _load_config().get("model")
+    return model
 
 
-def resolve_device():
+def resolve_device() -> str | None:
     """Explicit STT device ('cpu'/'cuda'/'auto'), or None to auto-detect.
     Precedence: TG_STT_DEVICE env > [stt].device > None (auto)."""
-    return os.getenv("TG_STT_DEVICE") or _load_config().get("device")
+    device: str | None = os.getenv("TG_STT_DEVICE") or _load_config().get("device")
+    return device
 
 
-def is_enabled():
+def is_enabled() -> bool:
     """Whether incoming-voice auto-transcription is on (default True)."""
     return bool(_load_config().get("enabled", True))
 
 
-def stt_settings():
+def stt_settings() -> dict[str, Any]:
     """Status snapshot for `tlgrm stt status`."""
-    return {"enabled": is_enabled(), "backend": resolve_backend(),
-            "model": resolve_model(), "device": resolve_device() or "auto"}
+    return {
+        "enabled": is_enabled(),
+        "backend": resolve_backend(),
+        "model": resolve_model(),
+        "device": resolve_device() or "auto",
+    }

@@ -13,8 +13,9 @@ def tmp_home(monkeypatch, tmp_path):
 
 def test_write_target_extraction():
     assert write_guard.write_target("send", types.SimpleNamespace(target="@x")) == "@x"
-    assert write_guard.write_target("forward",
-        types.SimpleNamespace(to_chat="@y")) == "@y"
+    assert (
+        write_guard.write_target("forward", types.SimpleNamespace(to_chat="@y")) == "@y"
+    )
     assert write_guard.write_target("chats", types.SimpleNamespace()) is None
     assert write_guard.write_target("whoami", types.SimpleNamespace()) is None
 

@@ -41,7 +41,16 @@ stt = ["faster-whisper>=1.0"]
 stt-whisper = ["openai-whisper>=20231117"]
 stt-all = ["tlgrm[stt,stt-whisper]"]
 mcp = ["mcp>=1.2"]
-dev = ["pytest>=7.0", "pytest-asyncio>=0.23", "pytest-timeout>=2.1", "pytest-xdist>=3.6"]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.23",
+    "pytest-timeout>=2.1",
+    "pytest-xdist>=3.6",
+    "ruff>=0.2.2",
+    "mypy>=1.18.0",
+    "pyrefly>=1.0.0",
+    "prek>=0.3.13",
+]
 all = ["tlgrm[mcp,stt]"]
 
 [tool.pytest.ini_options]
@@ -57,6 +66,64 @@ timeout = 30
 [project.scripts]
 tlgrm = "tlgrm.cli:main"
 tlgrm-mcp = "tlgrm.mcp.__main__:main"
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
+exclude = ["venv", ".venv", "build", "tests"]
+# Telethon and the optional STT/MCP backends ship no type stubs; silence
+# missing-import noise rather than littering per-import ignores.
+ignore_missing_imports = true
+
+[tool.pyrefly]
+project-includes = ["src"]
+python-version = "3.10.0"
+# Telethon's inline types are imprecise (params typed narrower than the runtime
+# accepts — e.g. non-Optional where None is valid, `client.start()` typed as
+# non-awaitable). The optional STT/MCP backends ship no types at all. Treat them
+# all as Any so Pyrefly checks our code, not their stubs — matching mypy's
+# ignore_missing_imports.
+replace-imports-with-any = [
+    "telethon",
+    "telethon.*",
+    "faster_whisper",
+    "whisper",
+    "mcp",
+    "mcp.*",
+    # py<3.11 fallback shim for stdlib tomllib; not installed on newer runtimes.
+    "tomli",
+]
+
+[tool.ruff]
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint.per-file-ignores]
+# ARG001: pytest fixtures (tmp_home, monkeypatch, capsys) are requested for
+#   their side effects — they configure the environment, so the argument is
+#   intentionally unreferenced in the test body.
+"tests/*" = ["ARG001"]
+# ARG001: every @mcp.tool() takes `ctx: Context` because the MCP framework
+#   injects it; the tool bodies forward named params and don't read ctx.
+"src/tlgrm/mcp/server.py" = ["ARG001"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG001", # unused arguments in functions
+]
+ignore = [
+    "E501", # line too long, handled by ruff formatter
+    "B008", # do not perform function calls in argument defaults
+    "B904", # allow raising exceptions without `from e`
+    "E712", # comparison to True/False
+    "W191", # indentation contains tabs
+]
 
 [tool.hatch.version]
 source = "vcs"

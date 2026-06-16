@@ -9,8 +9,7 @@ from tlgrm import accounts
 def tmp_home(monkeypatch, tmp_path):
     cfg = tmp_path / "config.toml"
     monkeypatch.setenv("TG_CONFIG_PATH", str(cfg))
-    monkeypatch.setattr(accounts, "_accounts_dir",
-                        lambda: str(tmp_path / "accounts"))
+    monkeypatch.setattr(accounts, "_accounts_dir", lambda: str(tmp_path / "accounts"))
     monkeypatch.delenv("TG_SESSION_PATH", raising=False)
     return tmp_path
 
@@ -35,16 +34,19 @@ def test_session_path_for_normal_command_honors_override(tmp_home, monkeypatch):
 
 def test_save_config_removes_temp_on_write_failure(tmp_home, monkeypatch):
     import tomli_w
-    monkeypatch.setattr(tomli_w, "dump",
-                        lambda *a, **k: (_ for _ in ()).throw(ValueError("boom")))
+
+    monkeypatch.setattr(
+        tomli_w, "dump", lambda *a, **k: (_ for _ in ()).throw(ValueError("boom"))
+    )
     with pytest.raises(ValueError):
         accounts.save_config({"default_account": None, "accounts": {}})
     assert not os.path.exists(accounts._config_path() + ".tmp")
 
 
 def test_save_then_load_roundtrip(tmp_home):
-    accounts.save_config({"default_account": "work",
-                          "accounts": {"work": {}, "personal": {}}})
+    accounts.save_config(
+        {"default_account": "work", "accounts": {"work": {}, "personal": {}}}
+    )
     cfg = accounts.load_config()
     assert cfg["default_account"] == "work"
     assert set(cfg["accounts"]) == {"work", "personal"}
@@ -105,8 +107,8 @@ def test_remove_account_drops_session_and_repoints_default(tmp_home):
 def test_resolve_account_uses_default_then_explicit(tmp_home):
     accounts.add_account("personal")
     accounts.add_account("work")
-    assert accounts.resolve_account() == "personal"        # default
-    assert accounts.resolve_account("work") == "work"      # explicit
+    assert accounts.resolve_account() == "personal"  # default
+    assert accounts.resolve_account("work") == "work"  # explicit
     with pytest.raises(accounts.TlgrmError):
         accounts.resolve_account("ghost")
 

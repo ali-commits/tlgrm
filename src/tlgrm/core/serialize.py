@@ -1,10 +1,12 @@
 """Pure object -> dict serializers shared by the CLI, MCP server, and webhooks.
 All functions are synchronous and take already-fetched Telethon objects."""
 
+from typing import Any
+
 from telethon import utils
 
 
-def media_type(msg):
+def media_type(msg: Any) -> str | None:
     """Return a coarse media type string, or None if the message has no media."""
     if not getattr(msg, "media", None):
         return None
@@ -21,7 +23,7 @@ def media_type(msg):
     return "other"
 
 
-def is_self_destruct(msg):
+def is_self_destruct(msg: Any) -> bool:
     """True if the message's media is self-destructing (has a TTL).
 
     Per the Telegram API ToS (§1.4), self-destructing content must not be
@@ -31,7 +33,7 @@ def is_self_destruct(msg):
     return bool(getattr(media, "ttl_seconds", None)) if media else False
 
 
-def serialize_dialog(dialog):
+def serialize_dialog(dialog: Any) -> dict[str, Any]:
     """Serialize a Telethon Dialog for `chats`."""
     entity = dialog.entity
     if dialog.is_user:
@@ -51,7 +53,7 @@ def serialize_dialog(dialog):
     }
 
 
-def serialize_history_message(msg, sender):
+def serialize_history_message(msg: Any, sender: Any) -> dict[str, Any]:
     """Serialize one message for `history` (sender flattened in)."""
     return {
         "id": msg.id,
@@ -63,7 +65,7 @@ def serialize_history_message(msg, sender):
     }
 
 
-def serialize_member(user):
+def serialize_member(user: Any) -> dict[str, Any]:
     """Serialize a participant for `members`."""
     return {
         "id": user.id,
@@ -75,7 +77,7 @@ def serialize_member(user):
     }
 
 
-def serialize_sender(sender):
+def serialize_sender(sender: Any) -> dict[str, Any]:
     """Serialize a message sender for webhook payloads."""
     return {
         "id": getattr(sender, "id", None),
@@ -87,7 +89,7 @@ def serialize_sender(sender):
     }
 
 
-def serialize_chat(chat, chat_type):
+def serialize_chat(chat: Any, chat_type: str) -> dict[str, Any]:
     """Serialize a chat for webhook payloads."""
     return {
         "id": getattr(chat, "id", None),
@@ -97,7 +99,7 @@ def serialize_chat(chat, chat_type):
     }
 
 
-def serialize_user(user):
+def serialize_user(user: Any) -> dict[str, Any]:
     """Serialize a User for whoami / user-info."""
     return {
         "id": user.id,
@@ -110,9 +112,12 @@ def serialize_user(user):
     }
 
 
-def serialize_chat_info(entity, participants_count=None):
+def serialize_chat_info(
+    entity: Any, participants_count: int | None = None
+) -> dict[str, Any]:
     """Serialize any entity (user/group/channel) for chat-info."""
     from telethon.tl.types import User
+
     if isinstance(entity, User):
         etype = "user"
     elif getattr(entity, "broadcast", False):
@@ -130,7 +135,7 @@ def serialize_chat_info(entity, participants_count=None):
     }
 
 
-def serialize_search_message(msg, sender):
+def serialize_search_message(msg: Any, sender: Any) -> dict[str, Any]:
     """Serialize a search hit (includes chat_id since results can span chats)."""
     return {
         "id": msg.id,
