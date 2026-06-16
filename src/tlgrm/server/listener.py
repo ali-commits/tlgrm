@@ -10,15 +10,6 @@ from .. import listen_core
 logger = logging.getLogger("tlgrm-server")
 
 
-def _parse_headers(header_list):
-    out = {}
-    for h in header_list or []:
-        if ":" in h:
-            k, v = h.split(":", 1)
-            out[k.strip()] = v.strip()
-    return out
-
-
 class AccountListener:
     def __init__(self, client, account_name):
         self.client = client
@@ -35,7 +26,7 @@ class AccountListener:
         st = listen_core.ListenState()
         st.enabled = cfg["enabled"]
         st.webhook_url = cfg["webhook_url"]
-        st.headers = _parse_headers(cfg["webhook_headers"])
+        st.headers = listen_core.parse_headers(cfg["webhook_headers"])
         st.mode = cfg["filter"]["mode"]
         st.ids, st.names = await listen_core._resolve_filters(
             self.client, cfg["filter"]["list"])

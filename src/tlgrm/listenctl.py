@@ -28,10 +28,15 @@ def webhook_clear(account):
     emit({"success": True, "account": account, "webhook_url": None})
 
 
+def _redact_header(h):
+    """Show the header name but hide its value (it may carry a bearer token)."""
+    return f"{h.split(':', 1)[0].strip()}: [REDACTED]" if ":" in h else h
+
+
 def webhook_show(account):
     cfg = accounts.listen_config(account)
     emit({"success": True, "account": account, "webhook_url": cfg["webhook_url"],
-          "webhook_headers": cfg["webhook_headers"]})
+          "webhook_headers": [_redact_header(h) for h in cfg["webhook_headers"]]})
 
 
 def filter_cmd(account, domain, op, value=None, tokens=None):

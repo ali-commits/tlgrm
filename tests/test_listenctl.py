@@ -26,6 +26,16 @@ def test_webhook_set_show_clear(tmp_home, capsys):
     assert accounts.listen_config("work")["webhook_url"] is None
 
 
+def test_webhook_show_redacts_header_values(tmp_home, capsys):
+    listenctl.webhook_set("work", "https://x", ["Authorization: Bearer SECRET"])
+    capsys.readouterr()  # drop the set output
+    listenctl.webhook_show("work")
+    out = capsys.readouterr().out
+    assert "Authorization" in out
+    assert "SECRET" not in out
+    assert "[REDACTED]" in out
+
+
 def test_filter_ops_and_live_push(tmp_home, monkeypatch):
     pushed = {}
     monkeypatch.setattr(ipc, "is_server_running", lambda: True)

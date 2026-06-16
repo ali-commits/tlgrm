@@ -33,6 +33,16 @@ async def forward_webhook(url, payload, headers=None, retries=3):
             await asyncio.sleep(2 ** (attempt - 1))
 
 
+def parse_headers(header_list):
+    """Turn ['Name: Value', ...] into a dict {Name: Value}."""
+    out = {}
+    for h in header_list or []:
+        if ":" in h:
+            k, v = h.split(":", 1)
+            out[k.strip()] = v.strip()
+    return out
+
+
 def _split_tokens(values):
     tokens = []
     for value in values or []:
@@ -138,7 +148,7 @@ async def process_event(event, state, account=None, pending=None, emit_console=F
     if emit_console or not state.webhook_url:
         print(json.dumps(payload, indent=2, ensure_ascii=False))
     if state.webhook_url:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         task = loop.create_task(forward_webhook(state.webhook_url, payload, state.headers))
         if pending is not None:
             pending.add(task)

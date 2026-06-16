@@ -51,10 +51,16 @@ class AccountManager:
         for name in load_config().get("accounts", {}):
             try:
                 await self.get(name)
-                await self.start_listener(name)
                 logger.info(f"Connected account '{name}'.")
             except Exception as e:
                 logger.warning(f"Skipping account '{name}': {e}")
+                continue
+            try:
+                await self.start_listener(name)
+            except Exception as e:
+                # The client is connected and usable for commands even if its
+                # listener couldn't start; don't report it as "skipped".
+                logger.warning(f"Listener for '{name}' failed to start: {e}")
 
     async def disconnect_all(self):
         for lis in self._listeners.values():

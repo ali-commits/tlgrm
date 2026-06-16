@@ -15,15 +15,6 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger("tlgrm-webhook")
 
 
-def _parse_headers(header_list):
-    out = {}
-    for h in header_list or []:
-        if ":" in h:
-            k, v = h.split(":", 1)
-            out[k.strip()] = v.strip()
-    return out
-
-
 async def run_listener(webhook_url=None, webhook_headers=None, verbose=False,
                        only=None, ignore=None):
     if verbose:
@@ -43,7 +34,7 @@ async def run_listener(webhook_url=None, webhook_headers=None, verbose=False,
 
     state = listen_core.ListenState()
     state.webhook_url = webhook_url
-    state.headers = _parse_headers(webhook_headers)
+    state.headers = listen_core.parse_headers(webhook_headers)
 
     preload()
     me = await client.get_me()
