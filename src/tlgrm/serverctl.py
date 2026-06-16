@@ -7,7 +7,7 @@ import subprocess
 
 from . import ipc
 from .output import emit
-from .server.app import pid_path, serve_forever
+from .server.app import pid_path, socket_path, serve_forever
 
 
 def _spawn_detached():
@@ -42,6 +42,9 @@ def stop():
         emit({"success": True, "message": f"sent SIGTERM to {pid}"})
     except ProcessLookupError:
         os.remove(path)
+        sock = socket_path()
+        if os.path.exists(sock):
+            os.remove(sock)  # clear the orphaned socket too
         emit({"success": True, "message": "server not running (stale pid removed)"})
 
 
@@ -50,5 +53,12 @@ def status():
 
 
 def restart():
+    import time
     stop()
+    # Wait for the old process to release the socket before respawning, so the
+    # new start() doesn't see the dying server as "already running".
+    for _ in range(50):
+        if not ipc.is_server_running():
+            break
+        time.sleep(0.1)
     start()

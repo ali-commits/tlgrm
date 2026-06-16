@@ -2,11 +2,12 @@
 socket. One process per machine/user."""
 
 import os
+import json
 import asyncio
 import logging
 import signal
 
-from .protocol import read_message, write_message
+from .protocol import read_message, write_message, err
 from .handler import handle_request
 from .manager import AccountManager
 
@@ -22,21 +23,38 @@ def socket_path():
 
 
 def pid_path():
-    return os.path.join(_dir(), "server.pid")
+    """Sibling of the socket so a TG_SERVER_SOCK override moves both together."""
+    sock = socket_path()
+    base = sock[:-5] if sock.endswith(".sock") else sock
+    return base + ".pid"
 
 
 async def _handle_conn(reader, writer, manager):
     try:
         while True:
-            req = await read_message(reader)
+            try:
+                req = await read_message(reader)
+            except (json.JSONDecodeError, ValueError):
+                # A malformed line must not silently drop the connection — reply
+                # with an error and keep serving.
+                await write_message(writer, err(
+                    None, "ProtocolError",
+                    "malformed request (expected one JSON object per line)"))
+                continue
             if req is None:
                 break
             resp = await handle_request(manager, req)
             await write_message(writer, resp)
     except (ConnectionError, asyncio.IncompleteReadError):
         pass
+    except Exception:  # never let one connection take down the server task
+        logger.exception("connection handler error")
     finally:
         writer.close()
+        try:
+            await writer.wait_closed()
+        except Exception:
+            pass
 
 
 async def start_server(manager=None):
