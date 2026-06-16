@@ -1,11 +1,19 @@
 """Turn one decoded request into a response dict: tier check, run the command
 against the account's hot client, map exceptions to error responses."""
 
-from types import SimpleNamespace
-
 from ..execute import execute
 from .protocol import ok, err
 from .tiers import is_allowed
+
+
+class _Args:
+    """Namespace whose unset attributes read as None, so a client may send only
+    the fields a command needs (the rest default to None)."""
+    def __init__(self, **kw):
+        self.__dict__.update(kw)
+
+    def __getattr__(self, name):
+        return None
 
 
 async def handle_request(manager, req):
@@ -33,7 +41,7 @@ async def handle_request(manager, req):
                    f"'{cmd}' requires a higher permission tier")
     try:
         client = await manager.get(req.get("account"))
-        args = SimpleNamespace(command=cmd, **(req.get("args") or {}))
+        args = _Args(command=cmd, **(req.get("args") or {}))
         data = await execute(client, args, account=req.get("account"))
         return ok(rid, data)
     except Exception as e:  # noqa: BLE001 — every failure becomes a response

@@ -75,3 +75,19 @@ def test_stt_status_control_command(monkeypatch):
     out = asyncio.run(handler.handle_request(_M(), {"id": 6, "cmd": "stt_status", "tier": "read"}))
     assert out["ok"]
     assert out["data"]["loaded"] == ["faster-whisper/tiny/cpu/int8"]
+
+
+def test_handler_tolerates_partial_args(monkeypatch):
+    seen = {}
+    async def fake_execute(client, args, account=None):
+        seen["file"] = args.file
+        seen["text"] = args.text
+        return {"success": True}
+    monkeypatch.setattr(handler, "execute", fake_execute)
+
+    class _M:
+        async def get(self, account=None): return object()
+    out = asyncio.run(handler.handle_request(
+        _M(), {"id": 1, "cmd": "send", "tier": "write", "args": {"target": "@x", "text": "hi"}}))
+    assert out["ok"]
+    assert seen["file"] is None and seen["text"] == "hi"
