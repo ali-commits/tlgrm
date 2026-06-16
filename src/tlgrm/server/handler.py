@@ -24,7 +24,7 @@ async def handle_request(manager, req):
     try:
         client = await manager.get(req.get("account"))
         args = SimpleNamespace(command=cmd, **(req.get("args") or {}))
-        data = await execute(client, args)
+        data = await execute(client, args, account=req.get("account"))
         return ok(rid, data)
     except Exception as e:  # noqa: BLE001 — every failure becomes a response
         return err(rid, type(e).__name__, str(e))

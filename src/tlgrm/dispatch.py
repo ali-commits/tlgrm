@@ -49,7 +49,7 @@ async def run_command(args):
         await _login(args.name)
         return
     async with open_client(account) as client:
-        emit(await execute(client, args))
+        emit(await execute(client, args, account=account))
 
 
 def run_command_routed(args):

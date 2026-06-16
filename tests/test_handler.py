@@ -23,7 +23,7 @@ def test_tier_rejection():
 
 
 def test_executes_command(monkeypatch):
-    async def fake_execute(client, args):
+    async def fake_execute(client, args, account=None):
         assert args.command == "chats" and args.limit == 3
         return {"success": True, "chats": []}
     monkeypatch.setattr(handler, "execute", fake_execute)

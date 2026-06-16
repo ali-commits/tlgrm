@@ -15,8 +15,10 @@ def _parse_when(value):
     return datetime.datetime.fromisoformat(value)
 
 
-async def execute(client, args):
+async def execute(client, args, account=None):
     """Run one command against a connected client; return its result dict."""
+    from .write_guard import check_write
+    check_write(account, args.command, args)
     cmd = args.command
     if cmd == "chats":
         return await chats.list_chats(client, args.limit)
