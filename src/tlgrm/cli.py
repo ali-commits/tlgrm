@@ -10,6 +10,11 @@ from .daemon import daemon_install, daemon_uninstall, daemon_status, daemon_logs
 __all__ = ["main", "build_parser", "emit"]
 
 
+def _default_account():
+    from .accounts import load_config
+    return load_config().get("default_account") or "default"
+
+
 def _friendly_error(e):
     """Turn common Telethon errors into clear, user-facing messages."""
     try:
@@ -87,6 +92,26 @@ def main():
         elif args.command == "account" and args.account_command != "add":
             from .dispatch import run_account_command
             run_account_command(args)
+        elif args.command == "listening":
+            from . import listenctl
+            listenctl.set_enabled(args.account or _default_account(),
+                                  args.listening_command == "enable")
+        elif args.command == "webhook":
+            from . import listenctl
+            acc = args.account or _default_account()
+            if args.webhook_command == "set":
+                listenctl.webhook_set(acc, args.url, args.headers)
+            elif args.webhook_command == "show":
+                listenctl.webhook_show(acc)
+            elif args.webhook_command == "clear":
+                listenctl.webhook_clear(acc)
+        elif args.command == "filter":
+            from . import listenctl
+            from .listen_core import _split_tokens
+            acc = args.account or _default_account()
+            listenctl.filter_cmd(acc, args.filter_domain, args.filter_op,
+                                 value=getattr(args, "mode", None),
+                                 tokens=_split_tokens(getattr(args, "targets", None)))
         else:
             from .dispatch import run_command_routed
             run_command_routed(args)
