@@ -29,7 +29,8 @@ def pid_path():
     return base + ".pid"
 
 
-async def _handle_conn(reader, writer, manager):
+async def _handle_conn(reader, writer, manager, conns):
+    conns.add(writer)
     try:
         while True:
             try:
@@ -50,6 +51,7 @@ async def _handle_conn(reader, writer, manager):
     except Exception:  # never let one connection take down the server task
         logger.exception("connection handler error")
     finally:
+        conns.discard(writer)
         writer.close()
         try:
             await writer.wait_closed()
@@ -65,10 +67,12 @@ async def start_server(manager=None):
     os.makedirs(os.path.dirname(sock), mode=0o700, exist_ok=True)
     if os.path.exists(sock):
         os.remove(sock)  # stale socket from a previous run
+    conns = set()  # active connection writers, so shutdown can abort them
     server = await asyncio.start_unix_server(
-        lambda r, w: _handle_conn(r, w, manager), path=sock)
+        lambda r, w: _handle_conn(r, w, manager, conns), path=sock)
     os.chmod(sock, 0o600)
     server._tlgrm_manager = manager  # stash for shutdown
+    server._tlgrm_conns = conns
     with open(pid_path(), "w") as f:
         f.write(str(os.getpid()))
     logger.info(f"tlgrm server listening on {sock}")
@@ -77,7 +81,17 @@ async def start_server(manager=None):
 
 async def stop_server(server):
     server.close()
-    await server.wait_closed()
+    # Abort any still-open client connections so wait_closed() can't block
+    # forever (Python 3.13+ waits for active connections to finish).
+    for w in list(getattr(server, "_tlgrm_conns", ())):
+        try:
+            w.close()
+        except Exception:
+            pass
+    try:
+        await asyncio.wait_for(server.wait_closed(), timeout=5)
+    except Exception:
+        pass
     mgr = getattr(server, "_tlgrm_manager", None)
     if mgr:
         await mgr.disconnect_all()

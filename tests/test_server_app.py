@@ -19,7 +19,7 @@ async def test_server_roundtrip(tmp_path, monkeypatch):
     monkeypatch.setattr(app, "socket_path", lambda: sock)
     monkeypatch.setattr(app, "pid_path", lambda: str(tmp_path / "s.pid"))
     monkeypatch.setattr(handler, "execute",
-                        lambda client, args: _aval({"success": True, "echo": args.command}))
+                        lambda client, args, account=None: _aval({"success": True, "echo": args.command}))
 
     srv = await app.start_server(_StubManager())
     try:
@@ -32,6 +32,23 @@ async def test_server_roundtrip(tmp_path, monkeypatch):
         writer.close()
     finally:
         await app.stop_server(srv)
+
+
+@pytest.mark.asyncio
+async def test_stop_server_does_not_hang_with_open_connection(tmp_path, monkeypatch):
+    # Regression: stop_server must abort still-open client connections, or
+    # wait_closed() blocks forever (and so would `tlgrm server stop`).
+    sock = str(tmp_path / "s.sock")
+    monkeypatch.setattr(app, "socket_path", lambda: sock)
+    monkeypatch.setattr(app, "pid_path", lambda: str(tmp_path / "s.pid"))
+
+    srv = await app.start_server(_StubManager())
+    reader, writer = await asyncio.open_unix_connection(sock)  # left open on purpose
+    await protocol.write_message(writer, protocol.request(1, "ping"))
+    await protocol.read_message(reader)
+    # Do NOT close the client. stop_server must still return promptly.
+    await asyncio.wait_for(app.stop_server(srv), timeout=5)
+    writer.close()
 
 
 @pytest.mark.asyncio
