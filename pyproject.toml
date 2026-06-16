@@ -41,12 +41,18 @@ stt = ["faster-whisper>=1.0"]
 stt-whisper = ["openai-whisper>=20231117"]
 stt-all = ["tlgrm[stt,stt-whisper]"]
 mcp = ["mcp>=1.2"]
-dev = ["pytest>=7.0", "pytest-asyncio>=0.23"]
+dev = ["pytest>=7.0", "pytest-asyncio>=0.23", "pytest-timeout>=2.1", "pytest-xdist>=3.6"]
 all = ["tlgrm[mcp,stt]"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Run tests in parallel across all cores; `loadfile` keeps a file's tests on one
+# worker (avoids cross-file races on shared fixtures/sockets).
+addopts = "-n auto --dist loadfile"
+# Fail (don't hang forever) if a test stalls — e.g. an async socket read that
+# never returns. The signal method interrupts the stuck test and lets the rest run.
+timeout = 30
 
 [project.scripts]
 tlgrm = "tlgrm.cli:main"
