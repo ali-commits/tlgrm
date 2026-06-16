@@ -9,6 +9,11 @@ All notable changes to tlgrm are documented here. This project adheres to
 
 - **`tlgrm --version`** — print the installed version and exit.
 
+### Internal
+
+- Converted the command dispatchers in `execute.py` and `cli.py` from `if/elif`
+  ladders to `match` statements (no behavior change).
+
 ## [0.3.0] — 2026-06-16
 
 ### Changed

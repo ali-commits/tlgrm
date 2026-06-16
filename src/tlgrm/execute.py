@@ -43,156 +43,171 @@ async def execute(
 
     check_write(account, args.command, args)
     cmd = args.command
-    if cmd == "chats":
-        return await chats.list_chats(client, args.limit)
-    elif cmd == "send":
-        return {
-            "success": True,
-            **await messages.send(
-                client,
-                args.target,
-                text=args.text,
-                file_path=args.file,
-                caption=args.caption,
-                voice=args.voice,
-                reply_to=args.reply_to,
-                silent=args.silent,
-            ),
-        }
-    elif cmd == "reply":
-        return {
-            "success": True,
-            **await messages.send(
-                client,
-                args.target,
-                text=args.text,
-                file_path=args.file,
-                caption=args.caption,
-                voice=args.voice,
-                reply_to=args.message_id,
-                silent=args.silent,
-            ),
-        }
-    elif cmd == "edit":
-        return {
-            "success": True,
-            **await messages.edit(client, args.target, args.message_id, args.text),
-        }
-    elif cmd == "delete":
-        return {
-            "success": True,
-            **await messages.delete(client, args.target, args.message_ids),
-        }
-    elif cmd == "history":
-        return await messages.get_history(
-            client, args.target, args.limit, args.offset_id
-        )
-    elif cmd == "search":
-        return await messages.search(client, args.query, args.target, args.limit)
-    elif cmd == "read":
-        return {
-            "success": True,
-            **await messages.mark_read(client, args.target, args.max_id),
-        }
-    elif cmd == "download":
-        return {
-            "success": True,
-            **await messages.download(
-                client, args.target, args.message_id, args.output
-            ),
-        }
-    elif cmd == "whoami":
-        return await users.whoami(client)
-    elif cmd == "user-info":
-        return await users.user_info(client, args.target)
-    elif cmd == "chat-info":
-        return await chats.chat_info(client, args.target)
-    elif cmd == "members":
-        return await users.get_members(client, args.target)
-    elif cmd == "forward":
-        return {
-            "success": True,
-            **await messages.forward(
-                client, args.from_chat, args.to_chat, args.message_ids
-            ),
-        }
-    elif cmd == "react":
-        return {
-            "success": True,
-            **await messages.react(
-                client, args.target, args.message_id, args.emoji, args.big
-            ),
-        }
-    elif cmd == "pin":
-        return {
-            "success": True,
-            **await chats.pin(client, args.target, args.message_id, args.notify),
-        }
-    elif cmd == "unpin":
-        return {
-            "success": True,
-            **await chats.unpin(client, args.target, args.message_id),
-        }
-    elif cmd == "mute":
-        return {"success": True, **await chats.mute(client, args.target, args.duration)}
-    elif cmd == "unmute":
-        return {"success": True, **await chats.unmute(client, args.target)}
-    elif cmd == "saved":
-        return {
-            "success": True,
-            **await messages.send(
-                client,
-                "me",
-                text=args.text,
-                file_path=args.file,
-                caption=args.caption,
-                voice=args.voice,
-            ),
-        }
-    elif cmd == "create-group":
-        return {
-            "success": True,
-            **await chats.create_group(client, args.title, args.members, args.channel),
-        }
-    elif cmd == "add-members":
-        return {
-            "success": True,
-            **await users.add_members(client, args.target, args.members),
-        }
-    elif cmd == "remove-members":
-        return {
-            "success": True,
-            **await users.remove_members(client, args.target, args.members),
-        }
-    elif cmd == "leave":
-        return {"success": True, **await chats.leave(client, args.target)}
-    elif cmd == "schedule":
-        sub = args.schedule_command
-        if sub == "send":
-            when = _parse_when(args.at) if args.at else _parse_duration(args.in_)
+    match cmd:
+        case "chats":
+            return await chats.list_chats(client, args.limit)
+        case "send":
             return {
                 "success": True,
-                **await messages.schedule_message(client, args.target, when, args.text),
+                **await messages.send(
+                    client,
+                    args.target,
+                    text=args.text,
+                    file_path=args.file,
+                    caption=args.caption,
+                    voice=args.voice,
+                    reply_to=args.reply_to,
+                    silent=args.silent,
+                ),
             }
-        elif sub == "list":
-            return await messages.list_scheduled(client, args.target)
-        elif sub == "cancel":
+        case "reply":
             return {
                 "success": True,
-                **await messages.cancel_scheduled(client, args.target, args.ids),
+                **await messages.send(
+                    client,
+                    args.target,
+                    text=args.text,
+                    file_path=args.file,
+                    caption=args.caption,
+                    voice=args.voice,
+                    reply_to=args.message_id,
+                    silent=args.silent,
+                ),
             }
-        raise TlgrmError(f"Unknown schedule subcommand: {sub!r}")
-    elif cmd == "poll":
-        return {
-            "success": True,
-            **await messages.send_poll(
-                client,
-                args.target,
-                args.question,
-                args.options,
-                args.multiple,
-                args.quiz,
-                args.correct,
-            ),
-        }
-    raise TlgrmError(f"Unknown command: {cmd!r}")
+        case "edit":
+            return {
+                "success": True,
+                **await messages.edit(client, args.target, args.message_id, args.text),
+            }
+        case "delete":
+            return {
+                "success": True,
+                **await messages.delete(client, args.target, args.message_ids),
+            }
+        case "history":
+            return await messages.get_history(
+                client, args.target, args.limit, args.offset_id
+            )
+        case "search":
+            return await messages.search(client, args.query, args.target, args.limit)
+        case "read":
+            return {
+                "success": True,
+                **await messages.mark_read(client, args.target, args.max_id),
+            }
+        case "download":
+            return {
+                "success": True,
+                **await messages.download(
+                    client, args.target, args.message_id, args.output
+                ),
+            }
+        case "whoami":
+            return await users.whoami(client)
+        case "user-info":
+            return await users.user_info(client, args.target)
+        case "chat-info":
+            return await chats.chat_info(client, args.target)
+        case "members":
+            return await users.get_members(client, args.target)
+        case "forward":
+            return {
+                "success": True,
+                **await messages.forward(
+                    client, args.from_chat, args.to_chat, args.message_ids
+                ),
+            }
+        case "react":
+            return {
+                "success": True,
+                **await messages.react(
+                    client, args.target, args.message_id, args.emoji, args.big
+                ),
+            }
+        case "pin":
+            return {
+                "success": True,
+                **await chats.pin(client, args.target, args.message_id, args.notify),
+            }
+        case "unpin":
+            return {
+                "success": True,
+                **await chats.unpin(client, args.target, args.message_id),
+            }
+        case "mute":
+            return {
+                "success": True,
+                **await chats.mute(client, args.target, args.duration),
+            }
+        case "unmute":
+            return {"success": True, **await chats.unmute(client, args.target)}
+        case "saved":
+            return {
+                "success": True,
+                **await messages.send(
+                    client,
+                    "me",
+                    text=args.text,
+                    file_path=args.file,
+                    caption=args.caption,
+                    voice=args.voice,
+                ),
+            }
+        case "create-group":
+            return {
+                "success": True,
+                **await chats.create_group(
+                    client, args.title, args.members, args.channel
+                ),
+            }
+        case "add-members":
+            return {
+                "success": True,
+                **await users.add_members(client, args.target, args.members),
+            }
+        case "remove-members":
+            return {
+                "success": True,
+                **await users.remove_members(client, args.target, args.members),
+            }
+        case "leave":
+            return {"success": True, **await chats.leave(client, args.target)}
+        case "schedule":
+            sub = args.schedule_command
+            match sub:
+                case "send":
+                    when = (
+                        _parse_when(args.at) if args.at else _parse_duration(args.in_)
+                    )
+                    return {
+                        "success": True,
+                        **await messages.schedule_message(
+                            client, args.target, when, args.text
+                        ),
+                    }
+                case "list":
+                    return await messages.list_scheduled(client, args.target)
+                case "cancel":
+                    return {
+                        "success": True,
+                        **await messages.cancel_scheduled(
+                            client, args.target, args.ids
+                        ),
+                    }
+                case _:
+                    raise TlgrmError(f"Unknown schedule subcommand: {sub!r}")
+        case "poll":
+            return {
+                "success": True,
+                **await messages.send_poll(
+                    client,
+                    args.target,
+                    args.question,
+                    args.options,
+                    args.multiple,
+                    args.quiz,
+                    args.correct,
+                ),
+            }
+        case _:
+            raise TlgrmError(f"Unknown command: {cmd!r}")

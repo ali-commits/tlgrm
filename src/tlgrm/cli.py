@@ -71,119 +71,127 @@ def main() -> None:
                 f"At least one of --text or --file is required for {args.command}."
             )
 
-        if args.command == "transcribe":
-            import os
-            from .stt import transcribe_audio
-            from .stt.settings import resolve_backend
+        match args.command:
+            case "transcribe":
+                import os
+                from .stt import transcribe_audio
+                from .stt.settings import resolve_backend
 
-            if not os.path.exists(args.file):
-                emit({"success": False, "error": f"File not found: {args.file}"})
-                sys.exit(1)
-            backend = args.backend or resolve_backend()
-            text = transcribe_audio(args.file, backend=args.backend, model=args.model)
-            emit({"success": text is not None, "backend": backend, "text": text})
-        elif args.command == "listen":
-            asyncio.run(
-                run_listener(
-                    args.webhook_url,
-                    args.webhook_header,
-                    args.verbose,
-                    args.only,
-                    args.ignore,
+                if not os.path.exists(args.file):
+                    emit({"success": False, "error": f"File not found: {args.file}"})
+                    sys.exit(1)
+                backend = args.backend or resolve_backend()
+                text = transcribe_audio(
+                    args.file, backend=args.backend, model=args.model
                 )
-            )
-        elif args.command == "daemon":
-            if args.daemon_command == "install":
-                daemon_install(
-                    args.webhook_url,
-                    args.webhook_header,
-                    args.verbose,
-                    only=args.only,
-                    ignore=args.ignore,
+                emit({"success": text is not None, "backend": backend, "text": text})
+            case "listen":
+                asyncio.run(
+                    run_listener(
+                        args.webhook_url,
+                        args.webhook_header,
+                        args.verbose,
+                        args.only,
+                        args.ignore,
+                    )
                 )
-            elif args.daemon_command == "uninstall":
-                daemon_uninstall()
-            elif args.daemon_command == "status":
-                daemon_status()
-            elif args.daemon_command == "logs":
-                daemon_logs()
-        elif args.command == "server":
-            from . import serverctl
+            case "daemon":
+                match args.daemon_command:
+                    case "install":
+                        daemon_install(
+                            args.webhook_url,
+                            args.webhook_header,
+                            args.verbose,
+                            only=args.only,
+                            ignore=args.ignore,
+                        )
+                    case "uninstall":
+                        daemon_uninstall()
+                    case "status":
+                        daemon_status()
+                    case "logs":
+                        daemon_logs()
+            case "server":
+                from . import serverctl
 
-            if args.server_command == "start":
-                serverctl.start(args.foreground)
-            elif args.server_command == "stop":
-                serverctl.stop()
-            elif args.server_command == "status":
-                serverctl.status()
-            elif args.server_command == "restart":
-                serverctl.restart()
-            elif args.server_command == "install":
-                from .daemon import server_install
+                match args.server_command:
+                    case "start":
+                        serverctl.start(args.foreground)
+                    case "stop":
+                        serverctl.stop()
+                    case "status":
+                        serverctl.status()
+                    case "restart":
+                        serverctl.restart()
+                    case "install":
+                        from .daemon import server_install
 
-                server_install()
-            elif args.server_command == "uninstall":
-                from .daemon import server_service_uninstall
+                        server_install()
+                    case "uninstall":
+                        from .daemon import server_service_uninstall
 
-                server_service_uninstall()
-            elif args.server_command == "logs":
-                from .daemon import server_logs
+                        server_service_uninstall()
+                    case "logs":
+                        from .daemon import server_logs
 
-                server_logs()
-        elif args.command == "account" and args.account_command != "add":
-            from .dispatch import run_account_command
+                        server_logs()
+            case "account" if args.account_command != "add":
+                from .dispatch import run_account_command
 
-            run_account_command(args)
-        elif args.command == "listening":
-            from . import listenctl
+                run_account_command(args)
+            case "listening":
+                from . import listenctl
 
-            acc = args.account or _default_account()
-            if args.listening_command == "window":
-                if args.window_command == "set":
-                    listenctl.window_set(acc, args.range)
-                elif args.window_command == "show":
-                    listenctl.window_show(acc)
-                elif args.window_command == "clear":
-                    listenctl.window_clear(acc)
-            else:
-                listenctl.set_enabled(acc, args.listening_command == "enable")
-        elif args.command == "webhook":
-            from . import listenctl
+                acc = args.account or _default_account()
+                if args.listening_command == "window":
+                    match args.window_command:
+                        case "set":
+                            listenctl.window_set(acc, args.range)
+                        case "show":
+                            listenctl.window_show(acc)
+                        case "clear":
+                            listenctl.window_clear(acc)
+                else:
+                    listenctl.set_enabled(acc, args.listening_command == "enable")
+            case "webhook":
+                from . import listenctl
 
-            acc = args.account or _default_account()
-            if args.webhook_command == "set":
-                listenctl.webhook_set(acc, args.url, args.headers)
-            elif args.webhook_command == "show":
-                listenctl.webhook_show(acc)
-            elif args.webhook_command == "clear":
-                listenctl.webhook_clear(acc)
-        elif args.command == "filter":
-            from . import listenctl
-            from .listen_core import _split_tokens
+                acc = args.account or _default_account()
+                match args.webhook_command:
+                    case "set":
+                        listenctl.webhook_set(acc, args.url, args.headers)
+                    case "show":
+                        listenctl.webhook_show(acc)
+                    case "clear":
+                        listenctl.webhook_clear(acc)
+            case "filter":
+                from . import listenctl
+                from .listen_core import _split_tokens
 
-            acc = args.account or _default_account()
-            listenctl.filter_cmd(
-                acc,
-                args.filter_domain,
-                args.filter_op,
-                value=getattr(args, "mode", None),
-                tokens=_split_tokens(getattr(args, "targets", None)),
-            )
-        elif args.command == "stt":
-            from . import sttctl
+                acc = args.account or _default_account()
+                listenctl.filter_cmd(
+                    acc,
+                    args.filter_domain,
+                    args.filter_op,
+                    value=getattr(args, "mode", None),
+                    tokens=_split_tokens(getattr(args, "targets", None)),
+                )
+            case "stt":
+                from . import sttctl
 
-            if args.stt_command == "status":
-                sttctl.status()
-            elif args.stt_command == "enable":
-                sttctl.set_enabled(True)
-            elif args.stt_command == "disable":
-                sttctl.set_enabled(False)
-            elif args.stt_command == "set":
-                sttctl.set_config(args.backend, args.model, args.device)
-        else:
-            from .dispatch import run_command_routed
+                match args.stt_command:
+                    case "status":
+                        sttctl.status()
+                    case "enable":
+                        sttctl.set_enabled(True)
+                    case "disable":
+                        sttctl.set_enabled(False)
+                    case "set":
+                        sttctl.set_config(args.backend, args.model, args.device)
+            case _:
+                from .dispatch import run_command_routed
 
-            run_command_routed(args)
+                run_command_routed(args)
     except KeyboardInterrupt:
         print("\nExiting...", file=sys.stderr)
         sys.exit(0)
