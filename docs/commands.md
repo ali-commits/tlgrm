@@ -7,7 +7,7 @@ tlgrm chats | jq '.[].name'
 tlgrm history --target @username --limit 5 | jq '.[].text'
 ```
 
-All commands except `login` and the `daemon` management subcommands require an authenticated session (run `tlgrm login` first) and your [API credentials](configuration.md) in the environment.
+Messaging/read commands require an authenticated session (run `tlgrm login` first) and your [API credentials](configuration.md) in the environment. Management subcommands (`account`, `server`, `daemon`, and the config groups below) don't all need a session — e.g. `tlgrm account list` and `tlgrm server status` work without one.
 
 ## Targets
 
@@ -16,6 +16,44 @@ Many commands take a `--target`. It accepts any of:
 - a **username**: `@username` (or `username`)
 - a **numeric chat ID**: `738667936` (a purely numeric value is always treated as an ID)
 - a **phone number**: `+15551234567` (must be a known contact)
+
+---
+
+## Accounts, server & management (0.3.0)
+
+These command groups manage multiple accounts, the background server, and live
+listening/filtering/STT/scheduling configuration. Full detail and rationale live
+in [configuration.md](configuration.md); a quick map:
+
+```bash
+# Accounts (multi-login) — pick one per command with -a/--account
+tlgrm account add [NAME]        # log in a new account
+tlgrm account list              # accounts + default
+tlgrm account use NAME          # set default
+tlgrm account rename OLD NEW
+tlgrm account remove NAME
+
+# Background server (owns the connections; the CLI/MCP/listener route through it)
+tlgrm server start [--foreground] | stop | restart | status
+tlgrm server install | uninstall | logs   # run it as a systemd user service
+
+# Per-account listening
+tlgrm -a NAME listening enable | disable
+tlgrm -a NAME listening window set 09:00-17:00 | show | clear
+tlgrm -a NAME webhook set URL [--header "K: V"] | show | clear
+
+# Per-contact permission filters (allow/block, matched by chat or sender)
+tlgrm -a NAME filter listen show | mode allow|block | add TARGET… | remove TARGET… | clear
+tlgrm -a NAME filter write  show | mode allow|block | add TARGET… | remove TARGET… | clear
+
+# Speech-to-text (server-global, live)
+tlgrm stt status | enable | disable | set [--backend B] [--model M] [--device auto|cpu|cuda]
+
+# Scheduled messages (Telegram-native)
+tlgrm schedule send --target T --text "…" --at "2026-06-20 09:00" | --in 2h
+tlgrm schedule list --target T
+tlgrm schedule cancel --target T --id ID…
+```
 
 ---
 
