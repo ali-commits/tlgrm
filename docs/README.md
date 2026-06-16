@@ -8,10 +8,12 @@ Welcome to the tlgrm documentation. tlgrm is an unofficial, feature-rich command
 
 | Guide | What it covers |
 |-------|----------------|
-| [Getting Started](getting-started.md) | Prerequisites, installation, API credentials, first login, first message, STT quick-start |
-| [Configuration](configuration.md) | All environment variables, session/download paths, STT backends, GPU setup |
-| [Command Reference](commands.md) | All 29 commands, flags, examples, JSON output shapes, and MCP tools |
-| [Webhook & Daemon Guide](webhook-guide.md) | Real-time webhooks, the systemd daemon, payload schema, delivery behavior |
+| [00 · Getting Started](00-getting-started.md) | Prerequisites, installation, API credentials, first login, first message, STT quick-start |
+| [01 · Features](01-features.md) | Every feature in plain language, tagged by whether it needs the background server |
+| [02 · Command Reference](02-commands.md) | All commands, flags, examples, JSON output shapes, and MCP tools |
+| [03 · Configuration](03-configuration.md) | Accounts, the background server, listening/filters/STT/scheduling, environment variables, GPU setup |
+| [04 · MCP server](04-mcp.md) | Driving Telegram from an AI assistant — client config, permission tiers, tool list |
+| [05 · Webhook & Daemon Guide](05-webhook-guide.md) | Real-time webhooks, the legacy systemd daemon, payload schema, delivery behavior |
 
 ## Quick links
 
@@ -22,8 +24,8 @@ Welcome to the tlgrm documentation. tlgrm is an unofficial, feature-rich command
 ## A 60-second tour
 
 ```bash
-# Install (CLI + MCP server)
-pip install "tlgrm[mcp]"
+# Install (CLI + MCP server) — uv recommended
+uv tool install "tlgrm[mcp]"      # or: pip install "tlgrm[mcp]"
 
 # Configure credentials (one-time, from my.telegram.org)
 export TG_API_ID=1234567
@@ -39,25 +41,13 @@ tlgrm send --target @username --text "Hello!"
 tlgrm react --target @username --message-id 137480 --emoji "👍"
 ```
 
-New here? Start with **[Getting Started](getting-started.md)**.
+New here? Start with **[Getting Started](00-getting-started.md)**.
 
 ## MCP server
 
-tlgrm ships a stdio MCP server (`tlgrm-mcp`) that exposes 24 Telegram tools to AI assistants like Claude Desktop or Claude Code. It is **read-only by default**; write and destructive operations require explicit opt-in flags.
+tlgrm ships a stdio MCP server (`tlgrm-mcp`) that exposes Telegram tools to AI assistants like Claude Desktop or Claude Code — read-only by default, with opt-in write/destructive tiers. It's a thin bridge to the background server, so it coexists with the CLI and the listener on one connection.
 
-```json
-{
-  "mcpServers": {
-    "tlgrm": {
-      "command": "uvx",
-      "args": ["--from", "tlgrm[mcp]", "tlgrm-mcp"],
-      "env": { "TG_API_ID": "...", "TG_API_HASH": "..." }
-    }
-  }
-}
-```
-
-See the [Command Reference — MCP tools](commands.md#mcp-tools) section for the full tool list and permission tiers.
+See the **[MCP guide](04-mcp.md)** for client configuration, permission tiers, and the full tool list.
 
 ## Speech-to-text highlights
 
@@ -67,4 +57,4 @@ See the [Command Reference — MCP tools](commands.md#mcp-tools) section for the
 - **Cloud:** openai, groq, deepgram, elevenlabs, google — set the API key, no extra package needed.
 - **Standalone:** `tlgrm transcribe --file voice.ogg` works without a Telegram login.
 
-See [Configuration → Speech-to-text backends](configuration.md#speech-to-text-backends) for the full reference.
+See [Configuration → Speech-to-text backends](03-configuration.md#speech-to-text-backends) for the full reference.

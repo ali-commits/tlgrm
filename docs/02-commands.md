@@ -7,7 +7,7 @@ tlgrm chats | jq '.[].name'
 tlgrm history --target @username --limit 5 | jq '.[].text'
 ```
 
-Messaging/read commands require an authenticated session (run `tlgrm login` first) and your [API credentials](configuration.md) in the environment. Management subcommands (`account`, `server`, `daemon`, and the config groups below) don't all need a session — e.g. `tlgrm account list` and `tlgrm server status` work without one.
+Messaging/read commands require an authenticated session (run `tlgrm login` first) and your [API credentials](03-configuration.md) in the environment. Management subcommands (`account`, `server`, `daemon`, and the config groups below) don't all need a session — e.g. `tlgrm account list` and `tlgrm server status` work without one.
 
 ## Targets
 
@@ -23,7 +23,7 @@ Many commands take a `--target`. It accepts any of:
 
 These command groups manage multiple accounts, the background server, and live
 listening/filtering/STT/scheduling configuration. Full detail and rationale live
-in [configuration.md](configuration.md); a quick map:
+in [03-configuration.md](03-configuration.md); a quick map:
 
 ```bash
 # Accounts (multi-login) — pick one per command with -a/--account
@@ -708,7 +708,7 @@ TG_STT_LANGUAGE=ar tlgrm transcribe --file voice.ogg
 { "success": true, "backend": "faster-whisper", "text": "..." }
 ```
 
-Local backends require their extra installed (e.g. `tlgrm[stt]`); cloud backends require their API key. See [Configuration → Speech-to-text](configuration.md#speech-to-text-backends).
+Local backends require their extra installed (e.g. `tlgrm[stt]`); cloud backends require their API key. See [Configuration → Speech-to-text](03-configuration.md#speech-to-text-backends).
 
 ---
 
@@ -735,7 +735,7 @@ tlgrm listen --verbose
 
 Runs until interrupted (`Ctrl+C`). Logs go to **stderr**. Incoming media is auto-downloaded to `TG_DOWNLOADS_DIR`. Self-destructing (TTL) media is skipped; the payload includes `"media.self_destruct": true`.
 
-See [Webhook & Daemon Guide](webhook-guide.md) for the full payload schema.
+See [Webhook & Daemon Guide](05-webhook-guide.md) for the full payload schema.
 
 ---
 
@@ -806,9 +806,9 @@ Stops, disables, and removes the service and its unit file.
 
 ## MCP tools
 
-The `tlgrm-mcp` stdio MCP server exposes Telegram operations as tools to any MCP-compatible AI assistant. Requires `pip install "tlgrm[mcp]"` and a prior `tlgrm login`. See [../README.md#mcp-server](../README.md#mcp-server) for client configuration.
+The `tlgrm-mcp` stdio MCP server exposes Telegram operations as tools to any MCP-compatible AI assistant. Requires `pip install "tlgrm[mcp]"` and a prior `tlgrm login`. See [the MCP guide](04-mcp.md) for client configuration.
 
-> `tlgrm-mcp` is a **bridge** to the [background server](configuration.md#background-server): tool calls route through the one owned connection (which enforces tiers and the write guard), and a server is auto-spawned if none is running — so running the MCP server, the daemon, and the CLI together is safe (one connection, no `database is locked`). Pass `--account NAME` to act as a specific account.
+> `tlgrm-mcp` is a **bridge** to the [background server](03-configuration.md#background-server): tool calls route through the one owned connection (which enforces tiers and the write guard), and a server is auto-spawned if none is running — so running the MCP server, the daemon, and the CLI together is safe (one connection, no `database is locked`). Pass `--account NAME` to act as a specific account.
 
 ### Read-only tier (default — no flags needed)
 

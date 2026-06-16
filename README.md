@@ -29,6 +29,8 @@ Drive your *personal* Telegram account from the terminal — or from an AI assis
 - **Speech-to-text** — auto-transcribe incoming voice notes (multilingual, GPU-aware, live-configurable via `tlgrm stt`), or transcribe any file with `tlgrm transcribe`.
 - **Clean JSON output** — commands print JSON to stdout (logs go to stderr), so it pipes straight into `jq` and scripts.
 
+→ **[See the full feature list](docs/01-features.md)** — each one tagged by whether it needs the background server.
+
 ## Quick start
 
 ```bash
@@ -36,11 +38,10 @@ Drive your *personal* Telegram account from the terminal — or from an AI assis
 export TG_API_ID=1234567
 export TG_API_HASH=your_api_hash_here
 
-# 2. Install
-pip install tlgrm          # CLI only
-pip install "tlgrm[mcp]"   # + MCP server
-pip install "tlgrm[stt]"   # + speech-to-text (faster-whisper)
-pip install "tlgrm[all]"   # everything
+# 2. Install — uv recommended (https://docs.astral.sh/uv/)
+uv tool install "tlgrm[all]"      # everything (CLI + MCP + speech-to-text)
+# uv tool install tlgrm           # CLI only
+# uv tool install "tlgrm[mcp]"    # CLI + MCP server
 
 # 3. Log in once
 tlgrm login
@@ -51,7 +52,7 @@ tlgrm send --target @username --text "Hello!"
 tlgrm chats | jq '.[].name'   # stdout is clean JSON; logs go to stderr
 ```
 
-With [`uv`](https://docs.astral.sh/uv/): `uv tool install "tlgrm[mcp]"`.
+**Prefer pip?** Same package and extras: `pip install tlgrm` (or `"tlgrm[mcp]"`, `"tlgrm[stt]"`, `"tlgrm[all]"`).
 
 ---
 
@@ -69,7 +70,7 @@ export TG_API_ID=1234567
 export TG_API_HASH=your_api_hash_here
 ```
 
-See [docs/configuration.md](docs/configuration.md) for all configuration options.
+See [docs/03-configuration.md](docs/03-configuration.md) for all configuration options.
 
 ---
 
@@ -126,7 +127,7 @@ Every command prints **clean JSON to stdout** — logs and progress go to **stde
 | `tlgrm listen [--webhook-url URL] [--webhook-header "N: V"] [--verbose]` | Listen for incoming messages (foreground) |
 | `tlgrm daemon install\|uninstall\|status\|logs` | Manage the background systemd daemon |
 
-Full reference with all flags, output shapes, and examples: **[docs/commands.md](docs/commands.md)**.
+Full reference with all flags, output shapes, and examples: **[docs/02-commands.md](docs/02-commands.md)**.
 
 ---
 
@@ -146,7 +147,9 @@ tlgrm ships a **stdio MCP server** (`tlgrm-mcp`). It is **read-only by default**
 }
 ```
 
-The MCP server is a **thin bridge** to the [background server](docs/configuration.md#background-server): every tool call routes through the one owned connection (which enforces the permission tier and the write guard), and a server is **auto-spawned** if none is running. So the MCP server, the webhook daemon, and your CLI all run at once with no `database is locked` conflict — no `--session` juggling. Add `--account NAME` to act as a specific [account](docs/configuration.md#accounts-multi-login) (otherwise the server's default account is used). Requires a prior `tlgrm login`.
+The MCP server is a **thin bridge** to the [background server](docs/03-configuration.md#background-server): every tool call routes through the one owned connection (which enforces the permission tier and the write guard), and a server is **auto-spawned** if none is running. So the MCP server, the webhook daemon, and your CLI all run at once with no `database is locked` conflict — no `--session` juggling. Add `--account NAME` to act as a specific [account](docs/03-configuration.md#accounts-multi-login) (otherwise the server's default account is used). Requires a prior `tlgrm login`.
+
+Full setup, permission tiers, and tool list: **[MCP guide](docs/04-mcp.md)**.
 
 ---
 
@@ -155,9 +158,10 @@ The MCP server is a **thin bridge** to the [background server](docs/configuratio
 Install the `stt` extra to auto-transcribe incoming voice notes in the webhook daemon, or to run `tlgrm transcribe` standalone (no login needed).
 
 ```bash
-pip install "tlgrm[stt]"         # faster-whisper (default, recommended)
-pip install "tlgrm[stt-whisper]" # original openai-whisper
-pip install "tlgrm[stt-all]"     # all local backends
+uv tool install "tlgrm[stt]"         # faster-whisper (default, recommended)
+uv tool install "tlgrm[stt-whisper]" # original openai-whisper
+uv tool install "tlgrm[stt-all]"     # all local backends
+# (or pip install "tlgrm[stt]", etc.)
 ```
 
 Cloud backends (openai, groq, deepgram, elevenlabs, google) need no extra package — just set the API key:
@@ -172,7 +176,7 @@ export OPENAI_API_KEY=sk-...   # auto-selects openai backend
 export TG_STT_MODEL=large-v3-turbo   # recommended for Arabic
 ```
 
-**GPU:** faster-whisper auto-detects NVIDIA GPUs (`TG_STT_DEVICE=auto`). CUDA 12 runtime required: `pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`. Full backend reference: **[docs/configuration.md](docs/configuration.md#speech-to-text-backends)**.
+**GPU:** faster-whisper auto-detects NVIDIA GPUs (`TG_STT_DEVICE=auto`). CUDA 12 runtime required: `pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`. Full backend reference: **[docs/03-configuration.md](docs/03-configuration.md#speech-to-text-backends)**.
 
 ---
 
@@ -201,10 +205,12 @@ export TG_STT_MODEL=large-v3-turbo   # recommended for Arabic
 
 | Guide | What it covers |
 |-------|----------------|
-| [Getting Started](docs/getting-started.md) | Install, credentials, login, first message |
-| [Configuration](docs/configuration.md) | All env vars, paths, STT backends |
-| [Command Reference](docs/commands.md) | Every command, flag, output shape |
-| [Webhook & Daemon Guide](docs/webhook-guide.md) | Webhooks, systemd, payload schema |
+| [00 · Getting Started](docs/00-getting-started.md) | Install, credentials, login, first message |
+| [01 · Features](docs/01-features.md) | Every feature in plain language, tagged by server need |
+| [02 · Command Reference](docs/02-commands.md) | Every command, flag, output shape |
+| [03 · Configuration](docs/03-configuration.md) | Accounts, server, listening/filters/STT, env vars |
+| [04 · MCP server](docs/04-mcp.md) | Driving Telegram from an AI assistant |
+| [05 · Webhook & Daemon Guide](docs/05-webhook-guide.md) | Webhooks, systemd, payload schema |
 
 ---
 

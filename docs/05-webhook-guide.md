@@ -8,7 +8,7 @@ When a message arrives, tlgrm:
 
 1. Builds a structured JSON payload (sender, chat, message, media).
 2. Downloads any attached media to `TG_DOWNLOADS_DIR`.
-3. Optionally transcribes voice/audio using the configured [STT backend](configuration.md#speech-to-text-backends) (if the `stt` extra or a cloud API key is available).
+3. Optionally transcribes voice/audio using the configured [STT backend](03-configuration.md#speech-to-text-backends) (if the `stt` extra or a cloud API key is available).
 4. POSTs the payload to your webhook URL (with retries), or prints it to stdout if no URL is set.
 
 Logs and progress output go to **stderr**, keeping stdout clean.
@@ -133,9 +133,9 @@ journalctl --user -u tlgrm-daemon -f
 tlgrm daemon uninstall
 ```
 
-> **Daemon environment:** systemd user services don't inherit your shell, so `tlgrm daemon install` snapshots your relevant settings — STT model, GPU library path, cloud API keys — into an owner-only `~/.tlgrm/daemon.env` that the unit loads. Export what you want (e.g. `TG_STT_MODEL=large-v3-turbo`) **before** installing, or edit that file and `systemctl --user restart tlgrm-daemon`. See [configuration.md](configuration.md#for-the-systemd-daemon).
+> **Daemon environment:** systemd user services don't inherit your shell, so `tlgrm daemon install` snapshots your relevant settings — STT model, GPU library path, cloud API keys — into an owner-only `~/.tlgrm/daemon.env` that the unit loads. Export what you want (e.g. `TG_STT_MODEL=large-v3-turbo`) **before** installing, or edit that file and `systemctl --user restart tlgrm-daemon`. See [03-configuration.md](03-configuration.md#for-the-systemd-daemon).
 
-> **Run it alongside the MCP server or CLI:** a Telethon session is single-process, so give the daemon its **own** session — log it in (`tlgrm --session ~/.tlgrm/daemon.session login`) and `export TG_SESSION_PATH=~/.tlgrm/daemon.session` before `tlgrm daemon install` (it's captured into `daemon.env`). Then the daemon, an MCP server, and your CLI run together without `database is locked`. See [running them concurrently](configuration.md#running-the-daemon-mcp-server-and-cli-at-the-same-time).
+> **Run it alongside the MCP server or CLI:** a Telethon session is single-process, so give the daemon its **own** session — log it in (`tlgrm --session ~/.tlgrm/daemon.session login`) and `export TG_SESSION_PATH=~/.tlgrm/daemon.session` before `tlgrm daemon install` (it's captured into `daemon.env`). Then the daemon, an MCP server, and your CLI run together without `database is locked`. See [running them concurrently](03-configuration.md#running-the-mcp-server-listener-and-cli-at-the-same-time).
 
 ---
 
@@ -197,7 +197,7 @@ Each webhook POST sends a JSON body with this structure:
 | `media.type` | string or null | `photo`, `voice`, `video`, `audio`, `document`, or `other` |
 | `media.local_path` | string or null | Absolute path to the downloaded file |
 | `media.self_destruct` | bool | `true` if the media was self-destructing (TTL) and was therefore skipped |
-| `media.transcription` | string or null | STT transcription of voice/audio (see [STT backends](configuration.md#speech-to-text-backends)) |
+| `media.transcription` | string or null | STT transcription of voice/audio (see [STT backends](03-configuration.md#speech-to-text-backends)) |
 
 > If the `stt` extra is installed or a cloud API key is set, incoming voice notes and audio are transcribed automatically and the text appears in `media.transcription`. Without any STT backend, the field is `null` and everything else works unchanged.
 

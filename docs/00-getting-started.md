@@ -45,7 +45,7 @@ pip install "tlgrm[stt]"
 pip install "tlgrm[all]"
 ```
 
-The `stt` extra installs `faster-whisper`, the default local STT backend. It also requires **FFmpeg** on your system path. For cloud STT backends (openai, groq, deepgram, elevenlabs, google), no extra package is needed — just set the corresponding API key. See [configuration.md](configuration.md#speech-to-text-backends) for details.
+The `stt` extra installs `faster-whisper`, the default local STT backend. It also requires **FFmpeg** on your system path. For cloud STT backends (openai, groq, deepgram, elevenlabs, google), no extra package is needed — just set the corresponding API key. See [03-configuration.md](03-configuration.md#speech-to-text-backends) for details.
 
 ## 3. Configure your credentials
 
@@ -56,7 +56,7 @@ export TG_API_ID=1234567
 export TG_API_HASH=your_api_hash_here
 ```
 
-Add these lines to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) to persist them. See [configuration.md](configuration.md) for all available settings.
+Add these lines to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) to persist them. See [03-configuration.md](03-configuration.md) for all available settings.
 
 ## 4. First-time login
 
@@ -107,11 +107,11 @@ export TG_STT_MODEL=large-v3-turbo   # recommended for Arabic / multilingual
 tlgrm transcribe --file voice.ogg
 ```
 
-If you have an NVIDIA GPU, faster-whisper uses it automatically (CUDA 12 runtime required). See [configuration.md](configuration.md#speech-to-text-backends) for the full backend reference, GPU setup, and cloud backend options.
+If you have an NVIDIA GPU, faster-whisper uses it automatically (CUDA 12 runtime required). See [03-configuration.md](03-configuration.md#speech-to-text-backends) for the full backend reference, GPU setup, and cloud backend options.
 
 ## Next steps
 
-- Explore every command in the [Command Reference](commands.md).
-- Forward incoming messages to an HTTP endpoint with the [Webhook & Daemon Guide](webhook-guide.md).
-- Tune paths and behavior via [Configuration](configuration.md).
-- Expose Telegram tools to an AI assistant: see [../README.md#mcp-server](../README.md#mcp-server).
+- Explore every command in the [Command Reference](02-commands.md).
+- Forward incoming messages to an HTTP endpoint with the [Webhook & Daemon Guide](05-webhook-guide.md).
+- Tune paths and behavior via [Configuration](03-configuration.md).
+- Expose Telegram tools to an AI assistant: see [the MCP guide](04-mcp.md).
