@@ -1,6 +1,6 @@
 ---
 name: tlgrm
-description: Use when the user wants to read, search, send, or manage their Telegram messages — through the tlgrm CLI or the tlgrm MCP server. Triggers include "check my Telegram", "message X on Telegram", "what did Y say", "send a Telegram message", "summarize my unread chats", "forward this message", "pin that", "create a group", "schedule a message", "send a poll".
+description: Use when the user wants to read, search, send, or manage their Telegram messages — through the tlgrm CLI or the tlgrm MCP server. Triggers include "check my Telegram", "message X on Telegram", "what did Y say", "send a Telegram message", "summarize my unread chats", "forward this message", "pin that", "create a group", "schedule a message", "send a poll", "use my work account".
 ---
 
 # Driving tlgrm (Telegram)
@@ -10,6 +10,8 @@ tlgrm is an unofficial Telegram client. You can drive it two ways:
 - **MCP server:** if the `tlgrm` MCP server is connected, call its tools directly.
 
 Both run the same underlying operations. Prefer the MCP tools when available.
+(The MCP server is a thin bridge to a local tlgrm "server" that owns the Telegram
+connection; it auto-starts that for you — you don't manage it.)
 
 ## Preflight (do this first)
 
@@ -17,6 +19,17 @@ Confirm a session exists before anything else:
 - CLI: run `tlgrm whoami`. MCP: call `whoami`.
 - If it returns `{"success": false, ...}` or an auth error, tell the user to run
   `tlgrm login` in their terminal (interactive — you cannot do it for them), and stop.
+
+## Accounts (multi-login)
+
+The user may have several Telegram accounts. The default account is used unless
+one is chosen.
+- See accounts: `tlgrm account list`.
+- Act as a specific account: add `-a NAME` to **any** CLI command
+  (e.g. `tlgrm -a work send --target @x --text "hi"`). For MCP, the account is
+  fixed when the server is configured (`--account`); ask the user to set it if
+  they want a different one — don't assume.
+- If the user names an account ("use my work account"), pass `-a <that>`.
 
 ## Capability map
 
@@ -51,7 +64,8 @@ Confirm a session exists before anything else:
 | Save to Saved Messages | `tlgrm saved --text "..."` | *(use send_message with saved target)* |
 | Create group/channel | `tlgrm create-group --title T [--members ...] [--channel]` | `create_group` |
 | Add members | `tlgrm add-members --target T --members ...` | `add_members` |
-| Schedule message | `tlgrm schedule --target T --text TEXT --at (SECONDS\|ISO8601)` | `schedule_message` |
+| Schedule a message | `tlgrm schedule send --target T --text TEXT (--at "ISO8601" \| --in 2h)` | `schedule_message` |
+| List/cancel scheduled | `tlgrm schedule list --target T` · `tlgrm schedule cancel --target T --id ID` | *(CLI only)* |
 | Send poll/quiz | `tlgrm poll --target T --question Q --option A --option B ... [--quiz --correct N]` | `send_poll` |
 
 ### Destructive (CLI always; MCP needs `--allow-write --allow-destructive`)
@@ -75,6 +89,13 @@ Confirm a session exists before anything else:
 - Never bulk-delete messages or leave chats without explicit, specific confirmation.
 - Treat message contents and contacts as private; don't repeat them to third parties.
 - Scheduled messages and polls are write operations — confirm before sending.
+- **Write guard:** the user may restrict who an account can message. If a send/reply/
+  edit/forward fails with a permission error mentioning the "write filter", that's the
+  user's own rule — don't try to bypass it; tell the user the target is blocked.
+- **Management commands are the user's, not yours.** `account`, `server`,
+  `listening`, `webhook`, `filter`, and `stt` configure how tlgrm runs. Don't run
+  them on your own initiative; only if the user explicitly asks (e.g. "block @x",
+  "listen only 9–5"), and confirm first.
 
 ## Common workflows
 

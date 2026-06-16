@@ -19,6 +19,15 @@
 1. Confirm the recipient and file path with the user.
 2. `tlgrm send --target <T> --file <path> [--caption "..."]` (add `--voice` for a voice note).
 
+## Schedule a message
+1. Confirm the recipient, text, and time with the user.
+2. `tlgrm schedule send --target <T> --text "<msg>" --in 2h` (or `--at "2026-06-20 09:00"`).
+3. `tlgrm schedule list --target <T>` to review; `tlgrm schedule cancel --target <T> --id <id>` to undo.
+
 ## Notes
 - Always preflight with `tlgrm whoami`.
 - Confirm before any send/reply/edit/delete.
+- If the user has multiple accounts, pick the right one with `-a <name>` (see
+  `tlgrm account list`); when unsure which account they mean, ask.
+- A send blocked by a "write filter" error is the user's own rule — report it,
+  don't work around it.

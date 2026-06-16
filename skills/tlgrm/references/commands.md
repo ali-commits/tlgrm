@@ -1,6 +1,8 @@
 # tlgrm command & tool cheat-sheet
 
 All CLI commands print JSON. `--target` = `@username` | numeric id | phone.
+Add `-a NAME` to any command to act as a specific account (default account otherwise);
+`tlgrm account list` shows them.
 
 ## Read (always available — no special flags)
 
@@ -27,7 +29,8 @@ All CLI commands print JSON. `--target` = `@username` | numeric id | phone.
 - `tlgrm saved (--text "..." | --file PATH) [--caption ...] [--voice]` — send to Saved Messages
 - `tlgrm create-group --title TITLE [--members ...] [--channel]`
 - `tlgrm add-members --target T --members ...`
-- `tlgrm schedule --target T --text TEXT --at (SECONDS|ISO8601)`
+- `tlgrm schedule send --target T --text TEXT (--at "ISO8601" | --in 2h)` — schedule a message
+- `tlgrm schedule list --target T` / `tlgrm schedule cancel --target T --id ID [ID ...]`
 - `tlgrm poll --target T --question Q --option A --option B ... [--multiple] [--quiz --correct N]`
 
 ## Destructive (CLI always; MCP needs `--allow-write --allow-destructive`)
@@ -36,10 +39,22 @@ All CLI commands print JSON. `--target` = `@username` | numeric id | phone.
 - `tlgrm leave --target T`
 - `tlgrm remove-members --target T --members ...`
 
-## Daemon / listener
+## Utilities
 
-- `tlgrm listen [--webhook-url URL] [--webhook-header "N: V"] [--verbose]`
-- `tlgrm daemon install|uninstall|status|logs`
+- `tlgrm transcribe --file PATH [--backend B] [--model M]` — speech-to-text on a file (no login needed)
+
+## Management (user-configured — don't run on your own initiative)
+
+These set up *how* tlgrm runs, not message actions. Only touch them if the user
+explicitly asks, and confirm first.
+
+- `tlgrm account add|list|use|rename|remove` — multiple Telegram logins
+- `tlgrm server start|stop|status|restart|install|uninstall|logs` — the background server that owns the connection (the CLI/MCP route through it automatically)
+- `tlgrm listening enable|disable` · `tlgrm listening window set 09:00-17:00` — per-account real-time listening
+- `tlgrm webhook set URL [--header "N: V"]|show|clear` — where incoming messages are forwarded
+- `tlgrm filter listen|write show|mode allow|block|add T…|remove T…|clear` — who an account may listen to / message
+- `tlgrm stt status|enable|disable|set [--model M] [--device cpu|cuda]` — transcription settings
+- `tlgrm listen …` / `tlgrm daemon …` — legacy standalone listener (superseded by the server)
 
 ## MCP tools by tier
 
