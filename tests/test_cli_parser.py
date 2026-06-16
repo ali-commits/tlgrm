@@ -77,3 +77,12 @@ def test_account_add_name_optional():
     parser = build_parser()
     args = parser.parse_args(["account", "add"])
     assert args.name is None
+
+
+def test_filter_write_subcommands():
+    parser = build_parser()
+    args = parser.parse_args(["filter", "write", "add", "@boss"])
+    assert args.filter_domain == "write" and args.filter_op == "add"
+    assert args.targets == ["@boss"]
+    args = parser.parse_args(["filter", "write", "mode", "allow"])
+    assert args.mode == "allow"
