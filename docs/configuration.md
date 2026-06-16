@@ -13,6 +13,28 @@ tlgrm is configured entirely through **environment variables** (and an optional 
 
 If `TG_API_ID` or `TG_API_HASH` is missing, tlgrm prints setup instructions and exits with status `1`.
 
+## Accounts (multi-login)
+
+tlgrm supports multiple Telegram accounts, each a named login with its own
+session under `~/.tlgrm/accounts/<name>.session`.
+
+```bash
+tlgrm account add personal     # interactive login
+tlgrm account add work
+tlgrm account list             # shows accounts and which is default
+tlgrm account use work         # set the default account
+tlgrm -a personal chats        # run a command as a specific account
+tlgrm account rename work job
+tlgrm account remove personal  # log out + delete the session
+```
+
+Commands without `-a/--account` use the default account. An existing pre-0.3.0
+login (`~/.tlgrm/tg_session.session`) is migrated to account `default`
+automatically on first run.
+
+> `--session PATH` / `TG_SESSION_PATH` still work as a low-level override but are
+> deprecated in favor of named accounts.
+
 ## Setting variables
 
 ### Temporarily (current shell only)

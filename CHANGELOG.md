@@ -3,6 +3,15 @@
 All notable changes to tlgrm are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Multi-account support.** Log into multiple Telegram accounts, each a named
+  profile (`tlgrm account add/list/use/rename/remove`) with its own session.
+  Select one per command with `-a/--account`. A pre-0.3.0 single session is
+  migrated to account `default` automatically.
+
 ## [0.2.1] — 2026-06-16
 
 ### Added
