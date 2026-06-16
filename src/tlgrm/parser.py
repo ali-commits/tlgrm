@@ -216,6 +216,16 @@ def build_parser():
     spsub.add_parser("status", help="Show server status")
     spsub.add_parser("restart", help="Restart the server")
 
+    stp = sub.add_parser("stt", help="Configure speech-to-text (server-global)")
+    stsub = stp.add_subparsers(dest="stt_command", required=True)
+    stsub.add_parser("status", help="Show STT settings")
+    stsub.add_parser("enable", help="Enable incoming-voice transcription")
+    stsub.add_parser("disable", help="Disable incoming-voice transcription")
+    stset = stsub.add_parser("set", help="Set backend/model/device")
+    stset.add_argument("--backend")
+    stset.add_argument("--model")
+    stset.add_argument("--device", choices=["auto", "cpu", "cuda"])
+
     p = sub.add_parser("transcribe", help="Transcribe an audio file (speech-to-text)")
     p.add_argument("--file", required=True, help="Path to the audio file")
     p.add_argument("--backend", help="Override the STT backend (faster-whisper, whisper, "

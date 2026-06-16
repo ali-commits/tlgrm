@@ -112,6 +112,16 @@ def main():
             listenctl.filter_cmd(acc, args.filter_domain, args.filter_op,
                                  value=getattr(args, "mode", None),
                                  tokens=_split_tokens(getattr(args, "targets", None)))
+        elif args.command == "stt":
+            from . import sttctl
+            if args.stt_command == "status":
+                sttctl.status()
+            elif args.stt_command == "enable":
+                sttctl.set_enabled(True)
+            elif args.stt_command == "disable":
+                sttctl.set_enabled(False)
+            elif args.stt_command == "set":
+                sttctl.set_config(args.backend, args.model, args.device)
         else:
             from .dispatch import run_command_routed
             run_command_routed(args)
