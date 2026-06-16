@@ -89,6 +89,15 @@ def main():
                 serverctl.status()
             elif args.server_command == "restart":
                 serverctl.restart()
+            elif args.server_command == "install":
+                from .daemon import server_install
+                server_install()
+            elif args.server_command == "uninstall":
+                from .daemon import server_service_uninstall
+                server_service_uninstall()
+            elif args.server_command == "logs":
+                from .daemon import server_logs
+                server_logs()
         elif args.command == "account" and args.account_command != "add":
             from .dispatch import run_account_command
             run_account_command(args)

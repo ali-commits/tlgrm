@@ -230,6 +230,9 @@ def build_parser():
     spsub.add_parser("stop", help="Stop the server")
     spsub.add_parser("status", help="Show server status")
     spsub.add_parser("restart", help="Restart the server")
+    spsub.add_parser("install", help="Install & start the server as a systemd user service")
+    spsub.add_parser("uninstall", help="Stop & remove the systemd server service")
+    spsub.add_parser("logs", help="Show recent server logs")
 
     stp = sub.add_parser("stt", help="Configure speech-to-text (server-global)")
     stsub = stp.add_subparsers(dest="stt_command", required=True)

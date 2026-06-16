@@ -10,6 +10,9 @@ USER_SERVICE_DIR = os.path.expanduser("~/.config/systemd/user")
 SERVICE_FILE_PATH = os.path.join(USER_SERVICE_DIR, f"{SERVICE_NAME}.service")
 ENV_FILE_PATH = os.path.expanduser("~/.tlgrm/daemon.env")
 
+SERVER_SERVICE_NAME = "tlgrm-server"
+SERVER_SERVICE_FILE_PATH = os.path.join(USER_SERVICE_DIR, f"{SERVER_SERVICE_NAME}.service")
+
 # systemd user services do NOT inherit your interactive shell's exports, so we
 # snapshot the relevant settings into an env file the unit loads. This keeps the
 # daemon's STT model, GPU library path, and cloud API keys working.
@@ -266,3 +269,89 @@ def daemon_logs():
         print(result.stdout)
     except Exception as e:
         print(f"Error reading daemon logs: {e}")
+
+
+def server_install(verbose=False):
+    """Install & start the tlgrm server as a systemd user service."""
+    if not check_systemctl():
+        print(json.dumps({"success": False, "error": "systemctl not found. Is systemd installed?"}, indent=2))
+        return
+
+    tlgrm_path = shutil.which("tlgrm") or os.path.abspath(sys.argv[0])
+    try:
+        captured_env = _write_env_file()
+    except Exception as e:
+        print(json.dumps({"success": False, "error": f"could not write env file: {e}"}, indent=2))
+        return
+
+    service_content = f"""[Unit]
+Description=tlgrm server (owns Telegram connections)
+After=network.target
+
+[Service]
+EnvironmentFile=-{ENV_FILE_PATH}
+ExecStart={tlgrm_path} server start --foreground
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+"""
+    try:
+        os.makedirs(USER_SERVICE_DIR, mode=0o700, exist_ok=True)
+        os.chmod(USER_SERVICE_DIR, 0o700)
+        fd = os.open(SERVER_SERVICE_FILE_PATH, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(service_content)
+        os.chmod(SERVER_SERVICE_FILE_PATH, 0o600)
+
+        success, out, err = run_systemctl_cmd(["daemon-reload"])
+        if not success:
+            raise Exception(f"daemon-reload failed: {err}")
+        success, out, err = run_systemctl_cmd(["enable", f"{SERVER_SERVICE_NAME}.service"])
+        if not success:
+            raise Exception(f"enable failed: {err}")
+        success, out, err = run_systemctl_cmd(["start", f"{SERVER_SERVICE_NAME}.service"])
+        if not success:
+            raise Exception(f"start failed: {err}")
+
+        print(json.dumps({
+            "success": True,
+            "message": "tlgrm server installed and started as a systemd service.",
+            "service": SERVER_SERVICE_NAME,
+            "path": SERVER_SERVICE_FILE_PATH,
+            "env_file": ENV_FILE_PATH,
+            "captured_env": captured_env,
+            "executable": tlgrm_path,
+        }, indent=2))
+    except Exception as e:
+        print(json.dumps({"success": False, "error": str(e)}, indent=2))
+
+
+def server_service_uninstall():
+    """Stop & remove the tlgrm-server systemd service."""
+    if not check_systemctl():
+        print(json.dumps({"success": False, "error": "systemctl not found."}, indent=2))
+        return
+    try:
+        run_systemctl_cmd(["stop", f"{SERVER_SERVICE_NAME}.service"])
+        run_systemctl_cmd(["disable", f"{SERVER_SERVICE_NAME}.service"])
+        if os.path.exists(SERVER_SERVICE_FILE_PATH):
+            os.remove(SERVER_SERVICE_FILE_PATH)
+        run_systemctl_cmd(["daemon-reload"])
+        print(json.dumps({"success": True, "message": "tlgrm server service removed."}, indent=2))
+    except Exception as e:
+        print(json.dumps({"success": False, "error": str(e)}, indent=2))
+
+
+def server_logs():
+    """Show recent tlgrm-server journal logs."""
+    try:
+        result = subprocess.run(
+            ["journalctl", "--user", "-u", SERVER_SERVICE_NAME, "-n", "30", "--no-pager"],
+            capture_output=True, text=True, check=True)
+        print(result.stdout)
+    except Exception as e:
+        print(f"Error reading server logs: {e}")
