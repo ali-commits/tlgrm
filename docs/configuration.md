@@ -108,9 +108,15 @@ tlgrm -a work filter write add @do_not_message
 ```
 
 `mode block` (default) with an empty list means you can message anyone;
-`mode allow` with a list means *only* those targets are allowed. The guard
-applies in both direct and server mode and is read fresh per command, so changes
-take effect immediately.
+`mode allow` with a list means *only* those targets are allowed (so switching to
+`allow` before adding any entries blocks **all** sends except to your own Saved
+Messages). The guard applies in both direct and server mode and is read fresh per
+command, so changes take effect immediately.
+
+> The write guard matches a target **as you write it** (normalized `@name`/id),
+> with no network lookup — so an `@username` and that chat's numeric id count as
+> separate entries. To block a contact regardless of how it's addressed, list
+> both forms.
 
 Together, `filter listen` and `filter write` give a full per-contact
 **listen × write** permission matrix — listen to someone but never reply, reply
