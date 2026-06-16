@@ -18,6 +18,12 @@ async def handle_request(manager, req):
             return err(rid, "PermissionError", "'reload' requires a higher tier")
         await manager.reload_listener(req.get("account"))
         return ok(rid, {"reloaded": req.get("account")})
+    if cmd == "stt_reload":
+        if not is_allowed(req.get("tier", "read"), "stt_reload"):
+            return err(rid, "PermissionError", "'stt_reload' requires a higher tier")
+        import tlgrm.stt as stt
+        stt.reset_models()
+        return ok(rid, {"stt_reloaded": True})
     if not is_allowed(req.get("tier", "read"), cmd):
         return err(rid, "PermissionError",
                    f"'{cmd}' requires a higher permission tier")

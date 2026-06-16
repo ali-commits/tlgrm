@@ -52,3 +52,15 @@ def test_reload_control_command():
         m, {"id": 7, "cmd": "reload", "account": "work", "tier": "read"}))
     assert out["ok"] and out["data"] == {"reloaded": "work"}
     assert m.reloaded == "work"
+
+
+def test_stt_reload_control_command(monkeypatch):
+    calls = {"reset": 0}
+    import tlgrm.stt as stt
+    monkeypatch.setattr(stt, "reset_models", lambda: calls.__setitem__("reset", calls["reset"] + 1))
+
+    class _M:
+        async def get(self, account=None): raise AssertionError("not a telegram op")
+    out = asyncio.run(handler.handle_request(_M(), {"id": 5, "cmd": "stt_reload", "tier": "read"}))
+    assert out["ok"] and out["data"] == {"stt_reloaded": True}
+    assert calls["reset"] == 1

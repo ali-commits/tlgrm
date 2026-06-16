@@ -63,6 +63,13 @@ async def start_server(manager=None):
     """Bind the socket and begin serving. Returns the asyncio server object."""
     manager = manager or AccountManager()
     await manager.load_all()
+    try:
+        from ..stt import preload
+        from ..stt.settings import is_enabled
+        if is_enabled():
+            asyncio.get_running_loop().run_in_executor(None, preload)
+    except Exception:
+        pass
     sock = socket_path()
     os.makedirs(os.path.dirname(sock), mode=0o700, exist_ok=True)
     if os.path.exists(sock):
