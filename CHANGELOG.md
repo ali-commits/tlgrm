@@ -11,6 +11,11 @@ All notable changes to tlgrm are documented here. This project adheres to
   profile (`tlgrm account add/list/use/rename/remove`) with its own session.
   Select one per command with `-a/--account`. A pre-0.3.0 single session is
   migrated to account `default` automatically.
+- **Background server + dual-mode CLI.** `tlgrm server start` runs a persistent
+  process that owns one hot connection per account over an owner-only Unix
+  socket. CLI commands automatically route through it when it's running (fast,
+  no per-command login) and fall back to a direct connection when it isn't —
+  which structurally eliminates the "database is locked" session conflict.
 
 ## [0.2.1] — 2026-06-16
 

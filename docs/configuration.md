@@ -35,6 +35,32 @@ automatically on first run.
 > `--session PATH` / `TG_SESSION_PATH` still work as a low-level override but are
 > deprecated in favor of named accounts.
 
+## Background server
+
+`tlgrm server` is an optional persistent process that owns **one hot connection
+per account** over an owner-only Unix socket at `~/.tlgrm/server.sock`. It exists
+to make several consumers coexist and to keep things fast.
+
+```bash
+tlgrm server start      # start it in the background (detached)
+tlgrm server status     # {"running": true/false}
+tlgrm server stop
+tlgrm server restart
+```
+
+When the server is running, **CLI commands automatically route through it** —
+no per-command login handshake, so commands are near-instant — and when it
+isn't, the CLI falls back to a direct one-shot connection. Because the server
+is the single owner of each account's session, this **structurally eliminates
+the `database is locked` / `AUTH_KEY_DUPLICATED` conflict** you'd otherwise hit
+running the CLI alongside a long-running listener: there's only ever one
+connection per account. With the server running you no longer need per-consumer
+`--session` files.
+
+`tlgrm account add` and `tlgrm login` always connect directly (they create the
+session and need interactive input); everything else routes through the server
+when it's up.
+
 ## Setting variables
 
 ### Temporarily (current shell only)
