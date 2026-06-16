@@ -38,3 +38,57 @@ def test_save_strips_none_for_toml(tmp_home):
     # TOML has no null; default_account None must not crash the writer.
     accounts.save_config({"default_account": None, "accounts": {}})
     assert "default_account" not in accounts._config_path_text()
+
+
+def test_add_account_sets_first_as_default(tmp_home):
+    accounts.add_account("personal")
+    cfg = accounts.load_config()
+    assert cfg["default_account"] == "personal"
+    assert "personal" in cfg["accounts"]
+
+
+def test_add_second_account_keeps_default(tmp_home):
+    accounts.add_account("personal")
+    accounts.add_account("work")
+    assert accounts.load_config()["default_account"] == "personal"
+
+
+def test_set_default_unknown_raises(tmp_home):
+    with pytest.raises(accounts.TlgrmError):
+        accounts.set_default("ghost")
+
+
+def test_rename_moves_session_and_default(tmp_home):
+    accounts.add_account("a")
+    open(accounts.account_session_path("a"), "w").close()
+    accounts.rename_account("a", "b")
+    cfg = accounts.load_config()
+    assert "b" in cfg["accounts"] and "a" not in cfg["accounts"]
+    assert cfg["default_account"] == "b"
+    assert os.path.exists(accounts.account_session_path("b"))
+
+
+def test_remove_account_drops_session_and_repoints_default(tmp_home):
+    accounts.add_account("a")
+    accounts.add_account("b")
+    open(accounts.account_session_path("a"), "w").close()
+    accounts.set_default("a")
+    accounts.remove_account("a")
+    cfg = accounts.load_config()
+    assert "a" not in cfg["accounts"]
+    assert cfg["default_account"] == "b"
+    assert not os.path.exists(accounts.account_session_path("a"))
+
+
+def test_resolve_account_uses_default_then_explicit(tmp_home):
+    accounts.add_account("personal")
+    accounts.add_account("work")
+    assert accounts.resolve_account() == "personal"        # default
+    assert accounts.resolve_account("work") == "work"      # explicit
+    with pytest.raises(accounts.TlgrmError):
+        accounts.resolve_account("ghost")
+
+
+def test_resolve_account_none_configured_raises(tmp_home):
+    with pytest.raises(accounts.TlgrmError):
+        accounts.resolve_account()

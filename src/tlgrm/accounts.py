@@ -59,3 +59,79 @@ def save_config(data):
         tomli_w.dump(_strip_none(data), f)
     os.replace(tmp, path)
     os.chmod(path, 0o600)
+
+
+def account_session_path(name):
+    return os.path.join(_accounts_dir(), f"{name}.session")
+
+
+def add_account(name):
+    cfg = load_config()
+    cfg["accounts"].setdefault(name, {})
+    if not cfg.get("default_account"):
+        cfg["default_account"] = name
+    save_config(cfg)
+    os.makedirs(_accounts_dir(), mode=0o700, exist_ok=True)
+
+
+def set_default(name):
+    cfg = load_config()
+    if name not in cfg["accounts"]:
+        raise TlgrmError(f"No such account: {name!r}. See 'tlgrm account list'.")
+    cfg["default_account"] = name
+    save_config(cfg)
+
+
+def rename_account(old, new):
+    cfg = load_config()
+    if old not in cfg["accounts"]:
+        raise TlgrmError(f"No such account: {old!r}.")
+    if new in cfg["accounts"]:
+        raise TlgrmError(f"Account already exists: {new!r}.")
+    cfg["accounts"][new] = cfg["accounts"].pop(old)
+    if cfg.get("default_account") == old:
+        cfg["default_account"] = new
+    save_config(cfg)
+    src, dst = account_session_path(old), account_session_path(new)
+    if os.path.exists(src):
+        os.replace(src, dst)
+
+
+def remove_account(name):
+    cfg = load_config()
+    if name not in cfg["accounts"]:
+        raise TlgrmError(f"No such account: {name!r}.")
+    del cfg["accounts"][name]
+    if cfg.get("default_account") == name:
+        cfg["default_account"] = next(iter(cfg["accounts"]), None)
+    save_config(cfg)
+    sess = account_session_path(name)
+    if os.path.exists(sess):
+        os.remove(sess)
+
+
+def resolve_account(name=None):
+    cfg = load_config()
+    chosen = name or cfg.get("default_account")
+    if not chosen:
+        raise TlgrmError("No account configured. Run 'tlgrm account add' to log in.")
+    if chosen not in cfg["accounts"]:
+        raise TlgrmError(f"No such account: {chosen!r}. See 'tlgrm account list'.")
+    return chosen
+
+
+def session_path_for(account=None, must_exist=True):
+    """Resolve the session base path for a command.
+
+    A TG_SESSION_PATH / --session override still wins (deprecated). Otherwise the
+    selected account's session is used. During login (`must_exist=False`) the name
+    need not be registered yet.
+    """
+    override = os.getenv("TG_SESSION_PATH")
+    if override:
+        return override
+    if must_exist:
+        account = resolve_account(account)
+    else:
+        account = account or "default"
+    return account_session_path(account)
