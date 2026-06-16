@@ -1,7 +1,6 @@
 """Entry point for the tlgrm MCP server (`tlgrm-mcp`)."""
 
 import argparse
-import os
 import sys
 
 

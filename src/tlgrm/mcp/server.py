@@ -25,7 +25,12 @@ def _tier(allow_write: bool, allow_destructive: bool) -> str:
 
 
 async def _ensure_server():
-    """Make sure a tlgrm server is accepting connections, spawning one if not."""
+    """Make sure a tlgrm server is accepting connections, spawning one if not.
+
+    Degrades gracefully: if the server is slow to bind (e.g. connecting many
+    accounts), we don't raise — the first tool call connects once it's up, or
+    surfaces a normal connection error if it never starts."""
+    import sys
     from .. import ipc, serverctl
     if ipc.is_server_running():
         return
@@ -34,6 +39,8 @@ async def _ensure_server():
         await asyncio.sleep(0.2)
         if ipc.is_server_running():
             return
+    sys.stderr.write("tlgrm-mcp: tlgrm server not up after 10s; tool calls will "
+                     "connect once it finishes starting.\n")
 
 
 async def _call(cmd: str, account, tier: str, **args) -> object:
