@@ -18,3 +18,12 @@ def test_passes_allow_and_block():
     st.mode = "block"
     assert lc._passes(st, chat_id=5, sender_id=0, cu=None, su=None) is False
     assert lc._passes(st, chat_id=9, sender_id=0, cu=None, su=None) is True
+
+
+def test_should_transcribe_respects_enabled(monkeypatch):
+    import tlgrm.stt.settings as s
+    monkeypatch.setattr(s, "is_enabled", lambda: False)
+    assert lc._should_transcribe("voice") is False
+    monkeypatch.setattr(s, "is_enabled", lambda: True)
+    assert lc._should_transcribe("voice") is True
+    assert lc._should_transcribe("photo") is False

@@ -92,6 +92,11 @@ def _passes(state, chat_id, sender_id, cu, su):
     return matched if state.mode == "allow" else not matched
 
 
+def _should_transcribe(media_type):
+    from .stt.settings import is_enabled
+    return media_type in ("voice", "audio") and is_enabled()
+
+
 async def build_payload(event, account=None):
     """Build the webhook JSON payload for an incoming message (incl. media
     download + transcription). `account` is {"name","id"} or None (standalone)."""
@@ -116,7 +121,7 @@ async def build_payload(event, account=None):
                 path = await msg.download_media(file=DOWNLOADS_DIR)
                 if path:
                     media["local_path"] = os.path.abspath(path)
-                    if media["type"] in ("voice", "audio"):
+                    if _should_transcribe(media["type"]):
                         text = transcribe_audio(media["local_path"])
                         if text:
                             media["transcription"] = text
