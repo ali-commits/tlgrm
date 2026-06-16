@@ -28,6 +28,7 @@ dependencies = [
     "telethon>=1.35.0",
     "httpx>=0.24.0",
     "tomli>=2.0; python_version < '3.11'",
+    "tomli-w>=1.0",
 ]
 
 [project.urls]
