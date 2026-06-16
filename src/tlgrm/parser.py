@@ -181,6 +181,12 @@ def build_parser():
     lssub = lsp.add_subparsers(dest="listening_command", required=True)
     lssub.add_parser("enable", help="Enable listening for the account")
     lssub.add_parser("disable", help="Disable listening for the account")
+    lwin = lssub.add_parser("window", help="Listen only during a daily time window")
+    lwsub = lwin.add_subparsers(dest="window_command", required=True)
+    lwset = lwsub.add_parser("set", help="Set the window, e.g. 09:00-17:00")
+    lwset.add_argument("range")
+    lwsub.add_parser("show")
+    lwsub.add_parser("clear")
 
     wp = sub.add_parser("webhook", help="Configure the account's webhook")
     wsub = wp.add_subparsers(dest="webhook_command", required=True)

@@ -13,7 +13,7 @@ def tmp_home(monkeypatch, tmp_path):
 def test_defaults(tmp_home):
     cfg = accounts.listen_config("work")
     assert cfg == {"enabled": False, "webhook_url": None, "webhook_headers": [],
-                   "filter": {"mode": "block", "list": []}}
+                   "filter": {"mode": "block", "list": []}, "window": None}
 
 
 def test_set_enabled_and_webhook(tmp_home):

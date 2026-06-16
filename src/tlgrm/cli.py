@@ -94,8 +94,16 @@ def main():
             run_account_command(args)
         elif args.command == "listening":
             from . import listenctl
-            listenctl.set_enabled(args.account or _default_account(),
-                                  args.listening_command == "enable")
+            acc = args.account or _default_account()
+            if args.listening_command == "window":
+                if args.window_command == "set":
+                    listenctl.window_set(acc, args.range)
+                elif args.window_command == "show":
+                    listenctl.window_show(acc)
+                elif args.window_command == "clear":
+                    listenctl.window_clear(acc)
+            else:
+                listenctl.set_enabled(acc, args.listening_command == "enable")
         elif args.command == "webhook":
             from . import listenctl
             acc = args.account or _default_account()

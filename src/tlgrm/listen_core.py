@@ -76,6 +76,31 @@ def _matches(ids, names, chat_id, sender_id, chat_username, sender_username):
     return any(u and u.lower() in names for u in (chat_username, sender_username))
 
 
+def _parse_window(text):
+    """Parse 'HH:MM-HH:MM' into (start_minute, end_minute), or None if invalid."""
+    try:
+        a, b = text.split("-")
+        ah, am = (int(x) for x in a.split(":"))
+        bh, bm = (int(x) for x in b.split(":"))
+        return (ah * 60 + am, bh * 60 + bm)
+    except Exception:
+        return None
+
+
+def _within_window(minutes, window):
+    start, end = window
+    if start == end:
+        return True
+    if start < end:
+        return start <= minutes < end
+    return minutes >= start or minutes < end  # overnight wrap
+
+
+def _now_minutes():
+    now = datetime.now()
+    return now.hour * 60 + now.minute
+
+
 class ListenState:
     """Live, swappable listening config for one account."""
     def __init__(self):
@@ -85,6 +110,7 @@ class ListenState:
         self.mode = "block"      # allow | block
         self.ids = set()
         self.names = set()
+        self.window = None
 
 
 def _passes(state, chat_id, sender_id, cu, su):
@@ -147,6 +173,8 @@ async def process_event(event, state, account=None, pending=None, emit_console=F
     sender = await event.get_sender()
     cu = getattr(chat, "username", None)
     su = getattr(sender, "username", None)
+    if state.window is not None and not _within_window(_now_minutes(), state.window):
+        return
     if not _passes(state, event.chat_id, event.sender_id, cu, su):
         return
     payload = await build_payload(event, account)

@@ -30,6 +30,8 @@ class AccountListener:
         st.mode = cfg["filter"]["mode"]
         st.ids, st.names = await listen_core._resolve_filters(
             self.client, cfg["filter"]["list"])
+        win = cfg.get("window")
+        st.window = listen_core._parse_window(win) if win else None
         self.state = st
         if self.account_obj["id"] is None:
             me = await self.client.get_me()

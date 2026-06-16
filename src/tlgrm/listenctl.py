@@ -39,6 +39,23 @@ def webhook_show(account):
           "webhook_headers": [_redact_header(h) for h in cfg["webhook_headers"]]})
 
 
+def window_set(account, window):
+    accounts.set_listen_window(account, window)
+    _push_reload(account)
+    emit({"success": True, "account": account, "window": window})
+
+
+def window_clear(account):
+    accounts.clear_listen_window(account)
+    _push_reload(account)
+    emit({"success": True, "account": account, "window": None})
+
+
+def window_show(account):
+    emit({"success": True, "account": account,
+          "window": accounts.listen_config(account)["window"]})
+
+
 def filter_cmd(account, domain, op, value=None, tokens=None):
     if op == "show":
         emit({"success": True, "account": account, "domain": domain,

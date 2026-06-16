@@ -182,7 +182,20 @@ def listen_config(name):
         "webhook_url": acc.get("webhook_url"),
         "webhook_headers": list(acc.get("webhook_headers", [])),
         "filter": filter_config(name, "listen"),
+        "window": acc.get("listen_window"),
     }
+
+
+def set_listen_window(name, window):
+    cfg = load_config()
+    _account(cfg, name)["listen_window"] = window
+    save_config(cfg)
+
+
+def clear_listen_window(name):
+    cfg = load_config()
+    _account(cfg, name).pop("listen_window", None)
+    save_config(cfg)
 
 
 def set_listen_enabled(name, enabled):
