@@ -32,3 +32,10 @@ def test_listenctl_window(tmp_home, capsys):
     assert accounts.listen_config("work")["window"] == "09:00-17:00"
     listenctl.window_clear("work")
     assert accounts.listen_config("work")["window"] is None
+
+
+def test_window_set_rejects_invalid(tmp_home, capsys):
+    listenctl.window_set("work", "25:99-9")          # invalid
+    out = capsys.readouterr().out
+    assert '"success": false' in out.lower()
+    assert accounts.listen_config("work")["window"] is None  # not stored

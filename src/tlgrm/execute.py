@@ -12,7 +12,11 @@ def _parse_when(value):
     """Parse a schedule time: integer seconds-from-now, or ISO-8601 datetime."""
     if value.isdigit():
         return datetime.timedelta(seconds=int(value))
-    return datetime.datetime.fromisoformat(value)
+    try:
+        return datetime.datetime.fromisoformat(value)
+    except ValueError:
+        raise TlgrmError(
+            f"Invalid --at time: {value!r} (use an ISO-8601 datetime or seconds-from-now).")
 
 
 def _parse_duration(value):

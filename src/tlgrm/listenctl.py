@@ -40,6 +40,11 @@ def webhook_show(account):
 
 
 def window_set(account, window):
+    from .listen_core import _parse_window
+    if _parse_window(window) is None:
+        emit({"success": False,
+              "error": f"Invalid window {window!r} (use HH:MM-HH:MM, e.g. 09:00-17:00)."})
+        return
     accounts.set_listen_window(account, window)
     _push_reload(account)
     emit({"success": True, "account": account, "window": window})

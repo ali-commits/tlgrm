@@ -82,6 +82,8 @@ def _parse_window(text):
         a, b = text.split("-")
         ah, am = (int(x) for x in a.split(":"))
         bh, bm = (int(x) for x in b.split(":"))
+        if not (0 <= ah < 24 and 0 <= am < 60 and 0 <= bh < 24 and 0 <= bm < 60):
+            return None
         return (ah * 60 + am, bh * 60 + bm)
     except Exception:
         return None
