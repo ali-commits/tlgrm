@@ -107,6 +107,28 @@ async def schedule_message(client, target, when, text=None):
     return {"scheduled": True, "message_id": msg.id, "to": target}
 
 
+async def list_scheduled(client, target):
+    """List the messages currently scheduled (server-side) for a chat."""
+    from telethon.tl import functions
+    result = await client(functions.messages.GetScheduledHistoryRequest(
+        peer=resolve_target(target), hash=0))
+    msgs = getattr(result, "messages", [])
+    return {"target": target, "count": len(msgs), "scheduled": [
+        {"id": m.id,
+         "date": m.date.isoformat() if getattr(m, "date", None) else None,
+         "text": getattr(m, "message", "") or ""}
+        for m in msgs]}
+
+
+async def cancel_scheduled(client, target, ids):
+    """Cancel one or more scheduled messages in a chat."""
+    from telethon.tl import functions
+    ids = [int(i) for i in ids]
+    await client(functions.messages.DeleteScheduledMessagesRequest(
+        peer=resolve_target(target), id=ids))
+    return {"cancelled": ids, "target": target}
+
+
 async def send_poll(client, target, question, options, multiple=False,
                     quiz=False, correct=None):
     """Send a poll or quiz to a chat."""
