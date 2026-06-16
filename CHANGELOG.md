@@ -32,6 +32,12 @@ All notable changes to tlgrm are documented here. This project adheres to
   server-global and applied live (the server drops cached models and re-warms);
   `disable` stops auto-transcribing incoming voice notes. The server pre-warms the
   model at startup.
+- **Scheduled messages.** `tlgrm schedule send --target X --text Y --at "<datetime>"`
+  or `--in 2h`, plus `schedule list` and `schedule cancel --id …` — backed by
+  Telegram's own scheduling, so they fire even when the tlgrm server isn't running.
+- **Listening windows.** `tlgrm listening window set 09:00-17:00` restricts an
+  account to listen only during that daily range (overnight ranges supported);
+  `show`/`clear` to inspect/remove.
 
 ## [0.2.1] — 2026-06-16
 

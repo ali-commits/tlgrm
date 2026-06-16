@@ -90,6 +90,35 @@ came from and which account to reply through.
 > If no server is running, these commands still update the stored config; it
 > takes effect when you next `tlgrm server start`.
 
+### Scheduled messages
+
+Schedule a message with Telegram's own server-side scheduling — it fires even
+when the tlgrm server (or your machine) is offline:
+
+```bash
+tlgrm schedule send --target @x --text "Standup!" --at "2026-06-20 09:00"
+tlgrm schedule send --target @x --text "ping" --in 2h     # 90s / 30m / 2h / 1d
+tlgrm schedule list --target @x                            # what's queued
+tlgrm schedule cancel --target @x --id 12345              # cancel by id
+```
+
+> Generic scheduling of arbitrary tasks (any command on a timer) is not yet
+> available — only messages.
+
+### Listening windows
+
+Restrict an account to listen only during a daily time range — outside it,
+incoming messages are ignored (the connection stays up, nothing is forwarded):
+
+```bash
+tlgrm -a work listening window set 09:00-17:00   # business hours
+tlgrm -a work listening window set 22:00-06:00   # overnight range (wraps midnight)
+tlgrm -a work listening window show
+tlgrm -a work listening window clear
+```
+
+Times are local. Applies when listening via the server; takes effect live.
+
 ### Write guard (who an account may message)
 
 The companion to the listen filter: a per-account **write filter** restricts
