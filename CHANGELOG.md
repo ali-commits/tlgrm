@@ -3,6 +3,19 @@
 All notable changes to tlgrm are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] — 2026-06-17
+
+### Fixed
+
+- **Server startup race.** When two servers were spawned at once — e.g. the
+  systemd unit and the one the MCP bridge auto-spawns — the second would delete
+  the first's socket, rebind, and both processes would then drive the same
+  Telegram session (`database is locked` / `AUTH_KEY_DUPLICATED`), breaking both.
+  Startup now takes an exclusive single-instance lock (`~/.tlgrm/server.lock`):
+  the first process to acquire it owns the socket and the connection; any other
+  stands down cleanly instead of stealing it. The lock is released on exit (and
+  by the OS on crash), so there is no stale-lock problem.
+
 ## [0.3.1] — 2026-06-16
 
 ### Added
